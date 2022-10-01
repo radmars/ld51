@@ -7,6 +7,12 @@ const Global = {
     freezeCooldown: 200,
 };
 
+let ticking = false;
+
+function tenSecondTick() {
+    ticking = true;
+}
+
 class Main extends Phaser.Scene
 {
     constructor ()
@@ -16,6 +22,9 @@ class Main extends Phaser.Scene
         this.cursors;
         this.player;
         this.freezeBullets;
+        this.ticker;
+        this.countdownText;
+
         this.freezeLastFired = 0;
         this.center = {x: Global.width / 2, y: Global.height / 2};
         this.rotateSpeed = Global.rotateSpeed;
@@ -30,6 +39,14 @@ class Main extends Phaser.Scene
 
     create ()
     {
+        this.ticker = this.time.addEvent({
+            delay: 10000,
+            callback: tenSecondTick,
+            callbackScope: this,
+            loop: true,
+        })
+        this.countdownText = this.add.text(0, 0, '10.0', { fill: '#00ff00' });
+
         var FreezeBullet = new Phaser.Class({
             Extends: Phaser.GameObjects.Image,
 
@@ -62,8 +79,8 @@ class Main extends Phaser.Scene
                     this.setActive(false);
                     this.setVisible(false);
                 }
-            }
-        })
+            },
+        });
 
         this.freezeBullets = this.add.group({
             classType: FreezeBullet,
@@ -79,12 +96,12 @@ class Main extends Phaser.Scene
 
     update (time, delta)
     {
-        // Rotate around center
+        // Player rotates around center.
         Phaser.Actions.RotateAroundDistance([this.player], this.center, this.rotateSpeed, 250);
         const angleDeg = Math.atan2(this.player.y - this.center.y, this.player.x - this.center.x) * 180 / Math.PI;
         this.player.angle = angleDeg-90; // container should face the center point
 
-        // Fire projectile on "up"
+        // Fire projectile on "up".
         if (this.cursors.up.isDown && time > this.freezeLastFired + Global.freezeCooldown)
         {
             let bullet = this.freezeBullets.get();
@@ -96,6 +113,10 @@ class Main extends Phaser.Scene
                 this.freezeLastFired = time;
             }
         }
+
+        this.countdownText.setText(this.ticker.getRemainingSeconds().toString().substr(0, 4));
+
+        ticking = false;
     }
 }
 

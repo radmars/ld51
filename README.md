@@ -4,7 +4,6 @@ Radmars's entry into Ludum Dare 51's Jam.
 
 -   Player control (controlling rotation and/or aiming w/ mouse)
 -   Germ reproduction
--   Different germ behavior for different germs
 -   Victory condition
 -   Loss condition
 -   Implementation of freezing

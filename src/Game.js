@@ -3,10 +3,10 @@
 const Global = {
     width: 1200,
     height: 1200,
-    maxPlayerSpeed: 0.002,
+    maxPlayerSpeed: 0.001,
     freezeCooldown: 200,
-    initialGerms: 5,
-    maxGerms: 20,
+    initialGerms: 3,
+    maxGerms: 40,
     maxInitialGermSpeed: 0.1,
     germGravityFactor: 0.00001,
 };
@@ -25,6 +25,8 @@ let germsBlue;
 let germsGreen;
 let germsOrange;
 let germsPink;
+let allGerms;
+const poolMap = new Map();
 
 let ticker;
 let countdownText;
@@ -76,7 +78,38 @@ class Main extends Phaser.Scene {
         // Germ code
         //
 
-        class Germ extends Phaser.Physics.Arcade.Image { };
+        class Germ extends Phaser.Physics.Arcade.Image {
+            constructor(scene, x, y) {
+                super(scene, x, y);
+                // Constructor is only used for initial setup, and we don't want germs immediately reproducing
+                this.readyToReproduce = false;
+            }
+
+            // Initializer for new germ produced via reproduction.
+            spawn(parent) {
+                this.readyToReproduce = false;
+                let x = parent.x;
+                let y = parent.y;
+                this.enableBody(true, x, y, true, true);
+                this.setCircle(16);
+            }
+
+            tickBehavior() {
+                if (this.readyToReproduce) {
+                    this.readyToReproduce = false;
+
+                    let germ = poolMap.get(this.constructor.name).get();
+
+                    if (germ) {
+                        germ.spawn(this);
+                    }
+                } else {
+                    if (Phaser.Math.Between(0, 4) === 0) {
+                        this.readyToReproduce = true;
+                    }
+                }
+            }
+        };
 
         class GermBlue extends Germ {
             constructor(scene, x, y) {
@@ -94,6 +127,12 @@ class Main extends Phaser.Scene {
                 this.x += this.velX * delta;
                 this.y += this.velY * delta;
             }
+
+            spawn(parent) {
+                this.velX = parent.velX;
+                this.velY = parent.velY;
+                super.spawn(parent);
+            }
         };
         class GermGreen extends Germ {
             constructor(scene, x, y) {
@@ -106,6 +145,11 @@ class Main extends Phaser.Scene {
                 super.update(time, delta);
                 this.velX += (center.x - this.x) * 2 * Global.germGravityFactor;
                 this.x += this.velX * delta;
+            }
+
+            spawn(parent) {
+                this.velX = parent.velX;
+                super.spawn(parent);
             }
         };
         class GermOrange extends Germ {
@@ -120,18 +164,28 @@ class Main extends Phaser.Scene {
                 this.velY += (center.y - this.y) * 2 * Global.germGravityFactor;
                 this.y += this.velY * delta;
             }
+
+            spawn(parent) {
+                this.velY = parent.velY;
+                super.spawn(parent);
+            }
         };
         class GermPink extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germPink');
-                this.velR = Phaser.Math.FloatBetween(-0.01 * Global.maxInitialGermSpeed, 0.01 * Global.maxInitialGermSpeed);
+                this.velR = Phaser.Math.FloatBetween(-0.012 * Global.maxInitialGermSpeed, 0.012 * Global.maxInitialGermSpeed);
             }
 
             update(time, delta) {
                 super.update(time, delta);
                 // Rotate around center
                 Phaser.Actions.RotateAroundDistance([this], center, this.velR * delta, Phaser.Math.Distance.BetweenPoints(center, this));
+            }
+
+            spawn(parent) {
+                this.velR = parent.velR;
+                super.spawn(parent);
             }
         };
 
@@ -155,6 +209,11 @@ class Main extends Phaser.Scene {
             maxSize: Global.maxGerms,
             runChildUpdate: true,
         });
+
+        poolMap.set('GermBlue', germsBlue);
+        poolMap.set('GermGreen', germsGreen);
+        poolMap.set('GermOrange', germsOrange);
+        poolMap.set('GermPink', germsPink);
 
         germsBlue.createMultiple({
             key: 'germBlue', // Not sure why I need to specify this
@@ -181,7 +240,7 @@ class Main extends Phaser.Scene {
             visible: true,
         });
 
-        const allGerms = [germsBlue, germsGreen, germsOrange, germsPink];
+        allGerms = [germsBlue, germsGreen, germsOrange, germsPink];
         const placementCircle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 300);
         allGerms.forEach((i) => {
             // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
@@ -212,7 +271,6 @@ class Main extends Phaser.Scene {
             fire(x, y, angle) {
                 this.enableBody(true, x, y, true, true)
                 this.setCircle(8);
-                this.setRotation(angle);
                 this.velX = this.speed * Math.sin(this.rotation);
                 this.velY = this.speed * Math.cos(this.rotation);
             }
@@ -280,7 +338,15 @@ class Main extends Phaser.Scene {
 
         countdownText.setText(ticker.getRemainingSeconds().toString().substr(0, 4));
 
-        ticking = false;
+        if (ticking) {
+            allGerms.forEach(i => {
+                i.getChildren().forEach(j => {
+                    j.tickBehavior();
+                })
+            })
+
+            ticking = false;
+        }
     }
 }
 

@@ -5,7 +5,7 @@ const Global = {
     height: 1200,
     maxPlayerSpeed: 0.001,
     freezeCooldown: 200,
-    initialGerms: 3,
+    initialGerms: 4,
     maxGerms: 40,
     maxInitialGermSpeed: 0.1,
     germGravityFactor: 0.00001,
@@ -20,6 +20,7 @@ let ticking = false;
 let cursors;
 let player;
 let freezeBullets;
+let lasers;
 
 let germsBlue;
 let germsGreen;
@@ -31,15 +32,7 @@ const poolMap = new Map();
 let ticker;
 let countdownText;
 let freezeLastFired = 0;
-
-function tenSecondTick() {
-    ticking = true;
-}
-
-function freezeHit(bullet, germ) {
-    bullet.disableBody(true, true);
-    germ.disableBody(true, true);
-}
+let laserReady = true;
 
 class Main extends Phaser.Scene {
     constructor() {
@@ -67,7 +60,9 @@ class Main extends Phaser.Scene {
 
         ticker = this.time.addEvent({
             delay: 10000,
-            callback: tenSecondTick,
+            callback: () => {
+                ticking = true;
+            },
             callbackScope: this,
             loop: true,
         })
@@ -95,6 +90,10 @@ class Main extends Phaser.Scene {
             }
 
             tickBehavior() {
+                if (!this.active) {
+                    return;
+                }
+
                 if (this.readyToReproduce) {
                     this.readyToReproduce = false;
 
@@ -257,20 +256,17 @@ class Main extends Phaser.Scene {
         // Bullet code
         //
 
-        class FreezeBullet extends Phaser.Physics.Arcade.Image {
+        class Bullet extends Phaser.Physics.Arcade.Image {
             constructor(scene, x, y) {
                 super(scene, x, y)
 
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'freezeBullet');
-
-                this.speed = Phaser.Math.GetSpeed(600, 1);
                 this.velX = 0;
                 this.velY = 0;
             }
 
             fire(x, y, angle) {
                 this.enableBody(true, x, y, true, true)
-                this.setCircle(8);
+                this.setRotation(angle);
                 this.velX = this.speed * Math.sin(this.rotation);
                 this.velY = this.speed * Math.cos(this.rotation);
             }
@@ -278,19 +274,47 @@ class Main extends Phaser.Scene {
             update(time, delta) {
                 super.update(time, delta);
 
-                this.x += this.speed * delta * this.velY;
-                this.y += this.speed * delta * this.velX;
+                this.x += delta * this.velY;
+                this.y += delta * this.velX;
 
                 if (this.y < 0 || this.y > Global.height || this.x < 0 || this.x > Global.width) {
-                    this.setActive(false);
-                    this.setVisible(false);
+                    this.disableBody(true, true);
                 }
+            }
+        };
+
+        class FreezeBullet extends Bullet {
+            constructor(scene, x, y) {
+                super(scene, x, y)
+
+                this.speed = Phaser.Math.GetSpeed(600, 1);
+                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'freezeBullet');
+            }
+
+            fire(x, y, angle) {
+                this.setCircle(8);
+                super.fire(x, y, angle);
+            }
+        };
+
+        class Laser extends Bullet {
+            constructor(scene, x, y) {
+                super(scene, x, y)
+
+                this.speed = Phaser.Math.GetSpeed(1200, 1);
+                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'laser');
             }
         };
 
         freezeBullets = this.physics.add.group({
             classType: FreezeBullet,
             maxSize: 5,
+            runChildUpdate: true,
+        });
+
+        lasers = this.physics.add.group({
+            classType: Laser,
+            maxSize: 2, // In case player fires at the end of a timer and then at the beginning of the next.
             runChildUpdate: true,
         });
 
@@ -310,7 +334,17 @@ class Main extends Phaser.Scene {
             // Allow germs to collide with others of the same type
             this.physics.add.collider(allGerms[i]);
 
-            this.physics.add.collider(freezeBullets, allGerms[i], freezeHit);
+            this.physics.add.collider(freezeBullets, allGerms[i], (bullet, germ) => {
+                bullet.disableBody(true, true);
+                // I thought that disableBody would set this to false as well, but it doesn't appear to.
+                bullet.setActive(false);
+                germ.disableBody(true, true);
+                germ.setActive(false);
+            });
+            this.physics.add.collider(lasers, allGerms[i], (laser, germ) => {
+                germ.disableBody(true, true);
+                germ.setActive(false);
+            });
 
             // Allow germs to collide with all other types
             for (let j = 1; j < allGerms.length; j++) {
@@ -325,7 +359,7 @@ class Main extends Phaser.Scene {
         const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
         player.angle = angleDeg + 45; // should face the center point, and the source image is rotated 45 degrees.
 
-        // Fire projectile on "up".
+        // Fire freeze bullet on "up".
         if (cursors.up.isDown && time > freezeLastFired + Global.freezeCooldown) {
             let bullet = freezeBullets.get();
 
@@ -335,10 +369,23 @@ class Main extends Phaser.Scene {
                 bullet.fire(player.x, player.y, angle);
             }
         }
+        // Fire laser on "down". Probably want a different button later (like space.)
+        if (cursors.down.isDown && laserReady) {
+            laserReady = true; // TODO: set to false. true for testing.
+
+            let laser = lasers.get();
+
+            if (laser) {
+                let angle = Phaser.Math.Angle.BetweenPoints(player, center);
+                laser.fire(player.x, player.y, angle);
+            }
+        }
 
         countdownText.setText(ticker.getRemainingSeconds().toString().substr(0, 4));
 
         if (ticking) {
+            laserReady = true;
+
             allGerms.forEach(i => {
                 i.getChildren().forEach(j => {
                     j.tickBehavior();

@@ -78,11 +78,19 @@ class Main extends Phaser.Scene {
                 super(scene, x, y);
                 // Constructor is only used for initial setup, and we don't want germs immediately reproducing
                 this.readyToReproduce = false;
+                this.frozen = false;
+            }
+
+            freeze() {
+                this.frozen = true;
+                this.setTint(0x5555ff);
             }
 
             // Initializer for new germ produced via reproduction.
             spawn(parent) {
                 this.readyToReproduce = false;
+                this.frozen = false;
+
                 let x = parent.x;
                 let y = parent.y;
                 this.enableBody(true, x, y, true, true);
@@ -91,6 +99,11 @@ class Main extends Phaser.Scene {
 
             tickBehavior() {
                 if (!this.active) {
+                    return;
+                }
+                if (this.frozen) {
+                    this.frozen = false;
+                    this.setTint(0xffffff);
                     return;
                 }
 
@@ -120,6 +133,9 @@ class Main extends Phaser.Scene {
 
             update(time, delta) {
                 super.update(time, delta);
+                if (this.frozen) {
+                    return;
+                }
                 // Pull toward the center
                 this.velX += (center.x - this.x) * Global.germGravityFactor;
                 this.velY += (center.y - this.y) * Global.germGravityFactor;
@@ -142,6 +158,9 @@ class Main extends Phaser.Scene {
 
             update(time, delta) {
                 super.update(time, delta);
+                if (this.frozen) {
+                    return;
+                }
                 this.velX += (center.x - this.x) * 2 * Global.germGravityFactor;
                 this.x += this.velX * delta;
             }
@@ -160,6 +179,9 @@ class Main extends Phaser.Scene {
 
             update(time, delta) {
                 super.update(time, delta);
+                if (this.frozen) {
+                    return;
+                }
                 this.velY += (center.y - this.y) * 2 * Global.germGravityFactor;
                 this.y += this.velY * delta;
             }
@@ -178,6 +200,9 @@ class Main extends Phaser.Scene {
 
             update(time, delta) {
                 super.update(time, delta);
+                if (this.frozen) {
+                    return;
+                }
                 // Rotate around center
                 Phaser.Actions.RotateAroundDistance([this], center, this.velR * delta, Phaser.Math.Distance.BetweenPoints(center, this));
             }
@@ -338,8 +363,7 @@ class Main extends Phaser.Scene {
                 bullet.disableBody(true, true);
                 // I thought that disableBody would set this to false as well, but it doesn't appear to.
                 bullet.setActive(false);
-                germ.disableBody(true, true);
-                germ.setActive(false);
+                germ.freeze();
             });
             this.physics.add.collider(lasers, allGerms[i], (laser, germ) => {
                 germ.disableBody(true, true);

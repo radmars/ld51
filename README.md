@@ -5,8 +5,7 @@ Radmars's entry into Ludum Dare 51's Jam.
 -   Player control (controlling rotation and/or aiming w/ mouse)
 -   Victory condition
 -   Loss condition
--   Implementation of freezing
--   Implementation of lethal weapon
+-   Giving the laser a reasonable bounding box
 -   Radmars intro screen
 -   Victory screen
 -   Sound fx

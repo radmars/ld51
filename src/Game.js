@@ -25,9 +25,9 @@ function tenSecondTick() {
     ticking = true;
 }
 
-function freezeHit(bullet, bacteria) {
+function freezeHit(bullet, germ) {
     bullet.disableBody(true, true);
-    bacteria.disableBody(true, true);
+    germ.disableBody(true, true);
 }
 
 class Main extends Phaser.Scene
@@ -67,43 +67,33 @@ class Main extends Phaser.Scene
 
         countdownText = this.add.text(0, 0, '10.0', { fill: '#00ff00' });
 
-        // TODO: Figure out how to set up a sane inheritence model for all bacteria.
-        let BlueBacteria = new Phaser.Class({
-            Extends: Phaser.Physics.Arcade.Image,
-
-            initialize:
-
-            function BlueBacteria (scene)
+        class Germ extends Phaser.Physics.Arcade.Image {
+            constructor (scene, x, y)
             {
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germBlue');
+                super(scene, x, y);
 
                 this.velX = Phaser.Math.FloatBetween(-1, 1);
                 this.velY = Phaser.Math.FloatBetween(-1, 1);
-            },
+            }
 
-            update: function(time, delta) {
+            update(time, delta) {
+                super.update(time, delta);
                 // Pull toward the center
                 this.velX += (center.x - this.x) * 0.0001;
                 this.velY += (center.y - this.y) * 0.0001;
                 this.x += this.velX;
                 this.y += this.velY;
-            },
+            }
 
-            split: function()
-            {
-                // TODO
-            },
+        };
 
-            freeze: function()
+        class GermBlue extends Germ {
+            constructor(scene, x, y)
             {
-                // TODO
-            },
-
-            die: function()
-            {
-                // TODO
-            },
-        });
+                super(scene, x, y);
+                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germBlue');
+            }
+        };
 
         let FreezeBullet = new Phaser.Class({
             Extends: Phaser.Physics.Arcade.Image,
@@ -148,7 +138,7 @@ class Main extends Phaser.Scene
         });
 
         germBlue = this.physics.add.group({
-            classType: BlueBacteria,
+            classType: GermBlue,
             maxSize: 50,
             runChildUpdate: true,
         })
@@ -164,7 +154,7 @@ class Main extends Phaser.Scene
             germ.setCircle(16);
         });
 
-        // Put bacteria randomly within a central circle
+        // Put germs randomly within a central circle
         const circle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 300);
         Phaser.Actions.RandomCircle(germBlue.getChildren(), circle);
 

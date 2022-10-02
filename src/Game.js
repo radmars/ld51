@@ -36,6 +36,7 @@ class Main extends Phaser.Scene
     {
         this.load.image('player', 'assets/ship.png');
         this.load.image('freezeBullet', 'assets/freezeBullet.png');
+        this.load.image('killBullet', 'assets/killBullet.png');
         this.load.image('bacteria', 'assets/star.png');
     }
 
@@ -83,6 +84,16 @@ class Main extends Phaser.Scene
             {
                 // TODO
             },
+
+            freeze: function()
+            {
+                // TODO
+            },
+
+            die: function()
+            {
+                // TODO
+            },
         })
 
         var FreezeBullet = new Phaser.Class({
@@ -95,12 +106,16 @@ class Main extends Phaser.Scene
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'freezeBullet');
 
                 this.speed = Phaser.Math.GetSpeed(600, 1);
+                this.velX = 0;
+                this.velY = 0;                
             },
 
             fire: function (x, y, angle)
             {
                 this.setPosition(x, y);
                 this.setRotation(angle);
+                this.velX = this.speed * Math.sin(this.rotation);
+                this.velY = this.speed * Math.cos(this.rotation);
 
                 this.setActive(true);
                 this.setVisible(true);
@@ -108,8 +123,8 @@ class Main extends Phaser.Scene
 
             update: function (time, delta)
             {
-                this.y += this.speed * delta * Math.sin(this.rotation);
-                this.x += this.speed * delta * Math.cos(this.rotation);
+                this.x += this.speed * delta * this.velY;
+                this.y += this.speed * delta * this.velX;
 
                 // TODO: Use boundary collisions instead, or maybe just timed life.
                 if (this.y < 0 || this.y > Global.height || this.x < 0 || this.x > Global.width)
@@ -133,7 +148,7 @@ class Main extends Phaser.Scene
         })
         bacteria.createMultiple({
             key: 'bacteria', // Not sure why I need to specify this
-            quantity: 5,
+            quantity: 10,
             active: true,
             visible: true,
         });
@@ -142,12 +157,9 @@ class Main extends Phaser.Scene
         const circle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 150);
         Phaser.Actions.RandomCircle(bacteria.getChildren(), circle);
 
-        player = this.physics.add.image(400, 50, 'player')
-            .setDepth(1);
+        player = this.physics.add.image(400, 50, 'player').setDepth(1);
 
         cursors = this.input.keyboard.createCursorKeys();
-
-        // this.physics.add.collider(freezeBullets.getChildren(), bacteria.getChildren());
     }
 
     update (time, delta)
@@ -164,9 +176,12 @@ class Main extends Phaser.Scene
 
             if (bullet)
             {
-                let angle = Phaser.Math.Angle.BetweenPoints(player, center)
-                bullet.fire(player.x, player.y, angle);
                 freezeLastFired = time;
+                let angle = Phaser.Math.Angle.BetweenPoints(player, center);
+                bullet.fire(player.x, player.y, angle);
+                this.physics.add.collider(bullet, bacteria, () => {
+                    console.log("Collision!")
+                });
             }
         }
 

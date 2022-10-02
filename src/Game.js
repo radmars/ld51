@@ -1,8 +1,8 @@
 'use strict';
 
 const Global = {
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 1200,
     rotateSpeed: 0.005,
     freezeCooldown: 200,
 };
@@ -16,7 +16,7 @@ let ticking = false;
 let cursors;
 let player;
 let freezeBullets;
-let blueBacteria;
+let germBlue;
 let ticker;
 let countdownText;
 let freezeLastFired = 0;
@@ -26,10 +26,8 @@ function tenSecondTick() {
 }
 
 function freezeHit(bullet, bacteria) {
-    bullet.setActive(false);
-    bacteria.setActive(false);
-
-    // console.log("Collided!");
+    bullet.disableBody(true, true);
+    bacteria.disableBody(true, true);
 }
 
 class Main extends Phaser.Scene
@@ -42,14 +40,24 @@ class Main extends Phaser.Scene
     preload ()
     {
         this.load.image('player', 'assets/player.png');
-        this.load.image('freezeBullet', 'assets/freezeBullet.png');
-        this.load.image('killBullet', 'assets/killBullet.png');
-        this.load.image('blueBacteria', 'assets/blue.png');
-        this.load.image('orangeBacteria', 'assets/orange.png');
+        this.load.image('laser', 'assets/laser.png');
+        this.load.image('germBlue', 'assets/germ_blue.png');
+        this.load.image('germOrange', 'assets/germ_orange.png');
+        this.load.image('germGreen', 'assets/germ_green.png');
+        this.load.image('germPink', 'assets/germ_pink.png');
+
+        this.load.spritesheet('freezeBullet', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
+
+        this.load.audio('music', ['assets/ld51-main-v1.mp3'])
     }
 
     create ()
     {
+        // Sound
+        this.sound.pasueOnBlur = false;
+        let music = this.sound.add('music');
+        music.play();
+
         ticker = this.time.addEvent({
             delay: 10000,
             callback: tenSecondTick,
@@ -61,13 +69,13 @@ class Main extends Phaser.Scene
 
         // TODO: Figure out how to set up a sane inheritence model for all bacteria.
         let BlueBacteria = new Phaser.Class({
-            Extends: Phaser.GameObjects.Image,
+            Extends: Phaser.Physics.Arcade.Image,
 
             initialize:
 
             function BlueBacteria (scene)
             {
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'blueBacteria');
+                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germBlue');
 
                 this.velX = Phaser.Math.FloatBetween(-1, 1);
                 this.velY = Phaser.Math.FloatBetween(-1, 1);
@@ -79,14 +87,6 @@ class Main extends Phaser.Scene
                 this.velY += (center.y - this.y) * 0.0001;
                 this.x += this.velX;
                 this.y += this.velY;
-
-                // TODO: Maybe use boundary collisions instead, or maybe just timed life.
-                if (this.y < 0 || this.y > Global.height || this.x < 0 || this.x > Global.width)
-                {
-                    this.setActive(false);
-                    this.setVisible(false);
-                    this.physics
-                }
             },
 
             split: function()
@@ -106,7 +106,7 @@ class Main extends Phaser.Scene
         });
 
         let FreezeBullet = new Phaser.Class({
-            Extends: Phaser.GameObjects.Image,
+            Extends: Phaser.Physics.Arcade.Image,
 
             initialize:
 
@@ -121,13 +121,11 @@ class Main extends Phaser.Scene
 
             fire: function (x, y, angle)
             {
-                this.setPosition(x, y);
+                this.enableBody(true, x, y, true, true)
+                this.setCircle(8);
                 this.setRotation(angle);
                 this.velX = this.speed * Math.sin(this.rotation);
                 this.velY = this.speed * Math.cos(this.rotation);
-
-                this.setActive(true);
-                this.setVisible(true);
             },
 
             update: function (time, delta)
@@ -135,7 +133,6 @@ class Main extends Phaser.Scene
                 this.x += this.speed * delta * this.velY;
                 this.y += this.speed * delta * this.velX;
 
-                // TODO: Use boundary collisions instead, or maybe just timed life.
                 if (this.y < 0 || this.y > Global.height || this.x < 0 || this.x > Global.width)
                 {
                     this.setActive(false);
@@ -149,37 +146,40 @@ class Main extends Phaser.Scene
             maxSize: 5,
             runChildUpdate: true,
         });
-        freezeBullets.scaleXY(1, 1);
 
-        blueBacteria = this.physics.add.group({
+        germBlue = this.physics.add.group({
             classType: BlueBacteria,
             maxSize: 50,
             runChildUpdate: true,
         })
-        blueBacteria.createMultiple({
-            key: 'blueBacteria', // Not sure why I need to specify this
+        germBlue.createMultiple({
+            key: 'germBlue', // Not sure why I need to specify this
             quantity: 10,
             active: true,
             visible: true,
         });
-        blueBacteria.scaleXY(1, 1);
+        // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
+        // Also, the germs only collide with themselves after this is set for some reason.
+        germBlue.children.each((germ) => {
+            germ.setCircle(16);
+        });
 
         // Put bacteria randomly within a central circle
-        const circle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 150);
-        Phaser.Actions.RandomCircle(blueBacteria.getChildren(), circle);
+        const circle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 300);
+        Phaser.Actions.RandomCircle(germBlue.getChildren(), circle);
 
-        player = this.physics.add.image(400, 50, 'player').setDepth(1);
-        player.scale = 2;
+        player = this.physics.add.image(400, 50, 'player').setDepth(1).setCircle(16);
 
         cursors = this.input.keyboard.createCursorKeys();
 
-        this.physics.add.collider(freezeBullets, blueBacteria, freezeHit);
+        this.physics.add.collider(freezeBullets, germBlue, freezeHit);
+        this.physics.add.collider(germBlue); // Allow blue germs to collide w/ each other.
     }
 
     update (time, delta)
     {
         // Player rotates around center.
-        Phaser.Actions.RotateAroundDistance([player], center, Global.rotateSpeed, 250);
+        Phaser.Actions.RotateAroundDistance([player], center, Global.rotateSpeed, 400);
         const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
         player.angle = angleDeg + 45; // should face the center point, and the source image is rotated 45 degrees.
 

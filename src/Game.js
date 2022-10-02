@@ -3,10 +3,12 @@
 const Global = {
     width: 1200,
     height: 1200,
-    rotateSpeed: 0.005,
+    maxPlayerSpeed: 0.002,
     freezeCooldown: 200,
     initialGerms: 5,
     maxGerms: 20,
+    maxInitialGermSpeed: 0.1,
+    germGravityFactor: 0.00001,
 };
 
 const center = {
@@ -74,47 +76,62 @@ class Main extends Phaser.Scene {
         // Germ code
         //
 
-        class Germ extends Phaser.Physics.Arcade.Image {
-            constructor(scene, x, y) {
-                super(scene, x, y);
-
-                this.velX = Phaser.Math.FloatBetween(-1, 1);
-                this.velY = Phaser.Math.FloatBetween(-1, 1);
-            }
-
-            update(time, delta) {
-                super.update(time, delta);
-                // Pull toward the center
-                this.velX += (center.x - this.x) * 0.0001;
-                this.velY += (center.y - this.y) * 0.0001;
-                this.x += this.velX;
-                this.y += this.velY;
-            }
-
-        };
+        class Germ extends Phaser.Physics.Arcade.Image { };
 
         class GermBlue extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germBlue');
+                this.velX = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
+                this.velY = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
+            }
+
+            update(time, delta) {
+                super.update(time, delta);
+                // Pull toward the center
+                this.velX += (center.x - this.x) * Global.germGravityFactor;
+                this.velY += (center.y - this.y) * Global.germGravityFactor;
+                this.x += this.velX * delta;
+                this.y += this.velY * delta;
             }
         };
         class GermGreen extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germGreen');
+                this.velX = Phaser.Math.FloatBetween(-2 * Global.maxInitialGermSpeed, 2 * Global.maxInitialGermSpeed);
+            }
+
+            update(time, delta) {
+                super.update(time, delta);
+                this.velX += (center.x - this.x) * 2 * Global.germGravityFactor;
+                this.x += this.velX * delta;
             }
         };
         class GermOrange extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germOrange');
+                this.velY = Phaser.Math.FloatBetween(-2 * Global.maxInitialGermSpeed, 2 * Global.maxInitialGermSpeed);
+            }
+
+            update(time, delta) {
+                super.update(time, delta);
+                this.velY += (center.y - this.y) * 2 * Global.germGravityFactor;
+                this.y += this.velY * delta;
             }
         };
         class GermPink extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germPink');
+                this.velR = Phaser.Math.FloatBetween(-0.01 * Global.maxInitialGermSpeed, 0.01 * Global.maxInitialGermSpeed);
+            }
+
+            update(time, delta) {
+                super.update(time, delta);
+                // Rotate around center
+                Phaser.Actions.RotateAroundDistance([this], center, this.velR * delta, Phaser.Math.Distance.BetweenPoints(center, this));
             }
         };
 
@@ -219,6 +236,10 @@ class Main extends Phaser.Scene {
             runChildUpdate: true,
         });
 
+        //
+        // Player code
+        //
+
         player = this.physics.add.image(400, 50, 'player').setDepth(1).setCircle(16);
 
         cursors = this.input.keyboard.createCursorKeys();
@@ -242,7 +263,7 @@ class Main extends Phaser.Scene {
 
     update(time, delta) {
         // Player rotates around center.
-        Phaser.Actions.RotateAroundDistance([player], center, Global.rotateSpeed, 400);
+        Phaser.Actions.RotateAroundDistance([player], center, Global.maxPlayerSpeed * delta, 400);
         const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
         player.angle = angleDeg + 45; // should face the center point, and the source image is rotated 45 degrees.
 

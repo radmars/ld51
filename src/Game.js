@@ -98,6 +98,20 @@ class Main extends Phaser.Scene {
             loop: true,
         })
 
+        //
+        // Animations
+        //
+
+        this.anims.create({
+            key: 'freezeIdle',
+            frames: [{ key: 'freezeBullet', frame: 0 }],
+        })
+        this.anims.create({
+            key: 'freezeExplode',
+            frames: this.anims.generateFrameNumbers('freezeBullet', { start: 1, end: 2 }),
+            frameRate: 5,
+        });
+
         countdownText = this.add.text(0, 0, '10.0', { fill: '#00ff00' });
 
         //
@@ -326,6 +340,9 @@ class Main extends Phaser.Scene {
 
             fire(x, y, angle) {
                 this.enableBody(true, x, y, true, true)
+                this.setActive(true);
+                this.setVisible(true);
+
                 this.setRotation(angle);
                 this.velX = this.speed * Math.sin(this.rotation);
                 this.velY = this.speed * Math.cos(this.rotation);
@@ -355,6 +372,25 @@ class Main extends Phaser.Scene {
                 this.setCircle(8);
                 super.fire(x, y, angle);
                 this.scene.sound.play('freezeshot');
+                this.play('freezeIdle');
+            }
+
+            explode() {
+                let that = this;
+                this.disableBody();
+                // Feels like an event listener would be best for this, but it keeps triggering after the animation completes.
+                // this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+                //     this.setActive(false);
+                //     this.setVisible(false);
+                // })
+                this.scene.time.addEvent({
+                    delay: 300,
+                    callback: () => {
+                        this.setActive(false);
+                        that.setVisible(false);
+                    },
+                });
+                this.play('freezeExplode');
             }
         };
 
@@ -420,9 +456,7 @@ class Main extends Phaser.Scene {
             this.physics.add.collider(allGerms[i]);
 
             this.physics.add.collider(freezeBullets, allGerms[i], (bullet, germ) => {
-                bullet.disableBody(true, true);
-                // I thought that disableBody would set this to false as well, but it doesn't appear to.
-                bullet.setActive(false);
+                bullet.explode();
                 germ.freeze();
             });
             this.physics.add.collider(lasers, allGerms[i], (laser, germ) => {
@@ -430,7 +464,9 @@ class Main extends Phaser.Scene {
                 germ.setActive(false);
             });
             this.physics.add.collider(player, allGerms[i], (player, germ) => {
-                this.gameOver(false);
+                if (!germ.frozen) {
+                    this.gameOver(false);
+                }
             });
 
             // Allow germs to collide with all other types

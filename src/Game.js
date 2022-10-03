@@ -45,6 +45,7 @@ let gameOverText;
 let stageText;
 
 let gameOver = false;
+let clickToRestart = false;
 let currentStage = 1;
 
 class TitleScreen extends Phaser.Scene {
@@ -60,28 +61,6 @@ class TitleScreen extends Phaser.Scene {
     create() {
         this.add.image(400, 400, 'titlescreen');
         this.sound.play('intro', { volume: 0.5 });
-
-        this.input.on('pointerdown', (pointer) => {
-            this.sound.stopAll();
-            this.scene.start('Main');
-        });
-    }
-}
-
-class GameOverScreen extends Phaser.Scene {
-    constructor() {
-        super('GameOverScreen');
-    }
-
-    preload() {
-        this.load.image('gameoverscreen', 'assets/background.png');
-        this.load.audio('gameover', ['assets/ld51-gameover.m4a', 'assets/ld51-gameover.ogg']);
-    }
-
-    create() {
-        this.add.image(400, 400, 'gameoverscreen');
-        this.sound.play('gameover', { volume: 0.5 });
-        this.add.text(200, 400, 'GAME OVER?! CLICK TO START AGAIN?!!?!', { fill: '#00ff00' });
 
         this.input.on('pointerdown', (pointer) => {
             this.sound.stopAll();
@@ -107,6 +86,7 @@ class Main extends Phaser.Scene {
         this.load.spritesheet('laser', 'assets/laser.png', { frameWidth: 128, frameHeight: 32 });
 
         this.load.audio('music', ['assets/ld51-main.m4a', 'assets/ld51-main.ogg']);
+        this.load.audio('gameover', ['assets/ld51-gameover.m4a', 'assets/ld51-gameover.ogg']);
         this.load.audio('ice1', ['assets/sfx/ice1.m4a', 'assets/sfx/ice1.ogg']);
         this.load.audio('ice2', ['assets/sfx/ice2.m4a', 'assets/sfx/ice2.ogg']);
         this.load.audio('freezeshot', ['assets/sfx/freezeshot.m4a', 'assets/sfx/freezeshot.ogg']);
@@ -167,6 +147,9 @@ class Main extends Phaser.Scene {
     }
 
     create() {
+        gameOver = false;
+        clickToRestart = false;
+        this.sound.stopAll();
         //
         // Sound
         //
@@ -330,6 +313,11 @@ class Main extends Phaser.Scene {
             }
 
             update(time, delta) {
+                if (gameOver) {
+                    this.stop();
+                    return;
+                }
+
                 super.update(time, delta);
                 if (this.frozen) {
                     return;
@@ -359,6 +347,11 @@ class Main extends Phaser.Scene {
             }
 
             update(time, delta) {
+                if (gameOver) {
+                    this.stop();
+                    return;
+                }
+
                 super.update(time, delta);
                 if (this.frozen) {
                     return;
@@ -384,6 +377,11 @@ class Main extends Phaser.Scene {
             }
 
             update(time, delta) {
+                if (gameOver) {
+                    this.stop();
+                    return;
+                }
+
                 super.update(time, delta);
                 if (this.frozen) {
                     return;
@@ -409,6 +407,11 @@ class Main extends Phaser.Scene {
             }
 
             update(time, delta) {
+                if (gameOver) {
+                    this.stop();
+                    return;
+                }
+
                 super.update(time, delta);
                 if (this.frozen) {
                     return;
@@ -571,6 +574,9 @@ class Main extends Phaser.Scene {
                 fireLaser = true;
             }
             else {
+                if (clickToRestart) {
+                    this.scene.start('Main');
+                }
                 fireFreeze = true;
             }
         });
@@ -594,7 +600,7 @@ class Main extends Phaser.Scene {
             });
             this.physics.add.collider(player, allGerms[i], (player, germ) => {
                 if (!germ.frozen) {
-                    this.gameOver(false);
+                    this.endGame(false);
                 }
             });
 
@@ -606,6 +612,10 @@ class Main extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (gameOver) {
+            return;
+        }
+
         // Player rotates around center.
         Phaser.Actions.RotateAroundDistance([player], center, Global.playerSpeed * delta, Global.size / 2 - 50);
         const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
@@ -673,32 +683,39 @@ class Main extends Phaser.Scene {
         }
     }
 
-    gameOver(didWin) {
+    endGame(didWin) {
         gameOver = true;
-        if (didWin) {
-            gameOverText = this.add.text(
-                Global.width / 2 - 250,
-                Global.height / 2 - 250,
-                'YOU WIN!',
-                {
-                    fill: '#00ff00',
-                    fontSize: '96px',
-                    fontStyle: 'bold',
-                },
-            );
-            gameOverText.setDepth(10);
-            this.scene.pause();
-        }
-        else {
+        gameOverText = this.add.text(
+            Global.width / 2 - 250,
+            Global.height / 2 - 250,
+            didWin ? 'YOU WIN!' : 'GAME OVER',
+            {
+                fill: '#00ff00',
+                fontSize: '96px',
+                fontStyle: 'bold',
+            },
+        );
+        gameOverText.setDepth(10);
+
+        this.gameOverTimer = this.time.addEvent({
+            delay: 2000,
+            callback: () => {
+                clickToRestart = true;
+            },
+            callbackScope: this,
+            loop: false,
+        });
+
+        if (!didWin) {
             this.sound.stopAll();
-            this.scene.start('GameOverScreen');
+            this.sound.play('gameover', { volume: 0.5 });
         }
     }
 
     nextStage() {
         currentStage++;
-        if (currentStage == 51) {
-            this.gameOver(true);
+        if (currentStage == 11) {
+            this.endGame(true);
             return;
         }
         if (currentStage % 2 == 0) {
@@ -721,7 +738,7 @@ const config = {
     type: Phaser.AUTO,
     width: Global.width,
     height: Global.height,
-    scene: [TitleScreen, Main, GameOverScreen],
+    scene: [TitleScreen, Main],
     physics: {
         default: 'arcade',
     },

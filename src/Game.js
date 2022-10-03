@@ -55,7 +55,14 @@ class Main extends Phaser.Scene {
 
         this.load.spritesheet('freezeBullet', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
 
-        this.load.audio('music', ['assets/ld51-main-v1.mp3'])
+        this.load.audio('music', ['assets/ld51-main-v1.mp3']);
+        this.load.audio('ice1', ['assets/sfx/ice1.m4a', 'assets/sfx/ice1.ogg']);
+        this.load.audio('ice2', ['assets/sfx/ice2.m4a', 'assets/sfx/ice2.ogg']);
+        this.load.audio('freezeshot', ['assets/sfx/freezeshot.m4a', 'assets/sfx/freezeshot.ogg']);
+        this.load.audio('laser', ['assets/sfx/laser.m4a', 'assets/sfx/laser.ogg']);
+        this.load.audio('laserfail', ['assets/sfx/laserfail.m4a', 'assets/sfx/laserfail.ogg']);
+        this.load.audio('reload', ['assets/sfx/reload.m4a', 'assets/sfx/reload.ogg']);
+        this.load.audio('split', ['assets/sfx/split.m4a', 'assets/sfx/split.ogg']);
     }
 
     create() {
@@ -91,6 +98,7 @@ class Main extends Phaser.Scene {
             freeze() {
                 this.frozen = true;
                 this.setTint(0x5555ff);
+                this.scene.sound.play('ice1');
             }
 
             // Initializer for new germ produced via reproduction.
@@ -122,6 +130,7 @@ class Main extends Phaser.Scene {
 
                     if (germ) {
                         germ.spawn(this);
+                        this.scene.sound.play('split');
                     }
                 } else {
                     if (Phaser.Math.Between(0, 4) === 0) {
@@ -327,6 +336,7 @@ class Main extends Phaser.Scene {
             fire(x, y, angle) {
                 this.setCircle(8);
                 super.fire(x, y, angle);
+                this.scene.sound.play('freezeshot');
             }
         };
 
@@ -336,6 +346,11 @@ class Main extends Phaser.Scene {
 
                 this.speed = Phaser.Math.GetSpeed(1200, 1);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'laser');
+            }
+
+            fire(x, y, angle) {
+                super.fire(x, y, angle);
+                this.scene.sound.play('laser');
             }
         };
 
@@ -415,6 +430,8 @@ class Main extends Phaser.Scene {
                     bullet.fire(player.x, player.y, angle);
                 }
             }
+        } else if (cursors.down.isDown && !laserReady) {
+            this.sound.play('laserfail');
         }
 
         if (fireLaser) {
@@ -436,6 +453,7 @@ class Main extends Phaser.Scene {
 
         if (ticking) {
             laserReady = true;
+            this.sound.play('reload');
 
             allGerms.forEach(i => {
                 i.getChildren().forEach(j => {

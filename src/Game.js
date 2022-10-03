@@ -54,7 +54,6 @@ class Main extends Phaser.Scene {
 
     preload() {
         this.load.image('background', 'assets/background.png');
-        this.load.image('laser', 'assets/laser.png');
 
         this.load.spritesheet('player', 'assets/player.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('germBlue', 'assets/germ_blue.png', { frameWidth: 32, frameHeight: 32 });
@@ -62,6 +61,7 @@ class Main extends Phaser.Scene {
         this.load.spritesheet('germGreen', 'assets/germ_green.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('germPink', 'assets/germ_pink.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('freezeBullet', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
+        this.load.spritesheet('laser', 'assets/laser.png', { frameWidth: 128, frameHeight: 32 });
 
         this.load.audio('music', ['assets/ld51-main.m4a', 'assets/ld51-main.ogg']);
         this.load.audio('ice1', ['assets/sfx/ice1.m4a', 'assets/sfx/ice1.ogg']);
@@ -126,7 +126,7 @@ class Main extends Phaser.Scene {
         // Sound
         //
         this.sound.pasueOnBlur = false;
-        let music = this.sound.add('music', {volume: 0.75, loop: true});
+        let music = this.sound.add('music', { volume: 0.75, loop: true });
         music.play();
 
         //
@@ -163,6 +163,12 @@ class Main extends Phaser.Scene {
             key: 'freezeExplode',
             frames: this.anims.generateFrameNumbers('freezeBullet', { start: 1, end: 2 }),
             frameRate: 5,
+        });
+        this.anims.create({
+            key: 'laser',
+            frames: this.anims.generateFrameNumbers('laser'),
+            frameRate: 20,
+            repeat: -1,
         });
         ['Blue', 'Green', 'Orange', 'Pink'].forEach(i => {
             this.anims.create({
@@ -432,7 +438,7 @@ class Main extends Phaser.Scene {
             fire(x, y, angle) {
                 this.setCircle(8);
                 super.fire(x, y, angle);
-                this.scene.sound.play('freezeshot', {volume: 0.75});
+                this.scene.sound.play('freezeshot', { volume: 0.75 });
                 this.play('freezeIdle');
             }
 
@@ -460,12 +466,12 @@ class Main extends Phaser.Scene {
                 super(scene, x, y)
 
                 this.speed = Phaser.Math.GetSpeed(Global.laserSpeed, 1);
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'laser');
+                this.play('laser');
             }
 
             fire(x, y, angle) {
                 super.fire(x, y, angle);
-                this.scene.sound.play('laser', {volume: 0.5});
+                this.scene.sound.play('laser', { volume: 0.5 });
                 // Need to do lots of adjustments of the bounding box because arcade physics and
                 // rotated rectangles don't get along. Only the leading tip of the laser will
                 // trigger a collision.

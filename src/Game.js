@@ -53,7 +53,7 @@ class TitleScreen extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('titlescreen', 'assets/background.png');
+        this.load.image('titlescreen', 'assets/splash.png');
         this.load.audio('intro', ['assets/ld51-intro.m4a', 'assets/ld51-intro.ogg']);
     }
 

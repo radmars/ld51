@@ -41,6 +41,9 @@ const poolMap = new Map();
 
 let tenSecondTimer;
 let countdownText;
+let gameOverText;
+
+let gameOver = false;
 
 class Main extends Phaser.Scene {
     constructor() {
@@ -426,6 +429,9 @@ class Main extends Phaser.Scene {
                 germ.disableBody(true, true);
                 germ.setActive(false);
             });
+            this.physics.add.collider(player, allGerms[i], (player, germ) => {
+                this.gameOver(false);
+            });
 
             // Allow germs to collide with all other types
             for (let j = 1; j < allGerms.length; j++) {
@@ -485,6 +491,25 @@ class Main extends Phaser.Scene {
 
             ticking = false;
         }
+
+        let anyAlive = false;
+        allGerms.forEach(group => {
+            group.getChildren().forEach(germ => {
+                if (germ.active == true) {
+                    anyAlive = true;
+                }
+            });
+        });
+        if (anyAlive == false) {
+            this.gameOver(true);
+        }
+    }
+
+    gameOver(didWin) {
+        gameOver = true;
+        gameOverText = this.add.text(Global.width / 2 - 250, Global.height / 2, didWin ? 'YOU WIN!' : 'GAME OVER', { fill: '#00ff00', fontSize: '96px', fontStyle: 'bold' });
+        gameOverText.setDepth(10);
+        this.scene.pause();
     }
 }
 

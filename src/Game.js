@@ -295,11 +295,8 @@ class Main extends Phaser.Scene {
                 }
                 
                 if (this.frozen) {
-                    //this.unfreeze();
-
                     return;
                 }
-                
 
                 if (this.readyToReproduce) {
                     this.readyToReproduce = false;
@@ -593,6 +590,7 @@ class Main extends Phaser.Scene {
             this.physics.add.collider(lasers, allGerms[i], (laser, germ) => {
                 germ.disableBody(true, true);
                 germ.setActive(false);
+                this.sound.play('hit', { volume: 0.75 });
             });
             this.physics.add.collider(player, allGerms[i], (player, germ) => {
                 if (!germ.frozen) {

@@ -148,6 +148,14 @@ class Main extends Phaser.Scene {
         //
 
         this.anims.create({
+            key: 'playerLaserReady',
+            frames: [{ key: 'player', frame: 0 }],
+        })
+        this.anims.create({
+            key: 'playerLaserEmpty',
+            frames: [{ key: 'player', frame: 1 }],
+        })
+        this.anims.create({
             key: 'freezeIdle',
             frames: [{ key: 'freezeBullet', frame: 0 }],
         })
@@ -188,6 +196,10 @@ class Main extends Phaser.Scene {
                 this.readyToReproduce = false;
                 this.unfreeze();
             }
+            color() {
+                // Meant as an abstract method.
+                console.log("Error: called 'color()' on Germ class!");
+            }
 
             freeze() {
                 this.frozen = true;
@@ -222,6 +234,7 @@ class Main extends Phaser.Scene {
 
                 if (this.readyToReproduce) {
                     this.readyToReproduce = false;
+                    this.play(`germ${this.color()}Idle`);
 
                     let germ = poolMap.get(this.constructor.name).get();
 
@@ -232,6 +245,7 @@ class Main extends Phaser.Scene {
                 } else {
                     if (Phaser.Math.FloatBetween(0.0, 1.0) <= Global.spawnChance) {
                         this.readyToReproduce = true;
+                        this.play(`germ${this.color()}Splitting`);
                     }
                 }
             }
@@ -243,6 +257,10 @@ class Main extends Phaser.Scene {
                 this.velX = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
                 this.velY = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
                 this.play('germBlueIdle');
+            }
+
+            color() {
+                return 'Blue';
             }
 
             update(time, delta) {
@@ -270,6 +288,10 @@ class Main extends Phaser.Scene {
                 this.play('germGreenIdle');
             }
 
+            color() {
+                return 'Green';
+            }
+
             update(time, delta) {
                 super.update(time, delta);
                 if (this.frozen) {
@@ -291,6 +313,10 @@ class Main extends Phaser.Scene {
                 this.play('germOrangeIdle');
             }
 
+            color() {
+                return 'Orange';
+            }
+
             update(time, delta) {
                 super.update(time, delta);
                 if (this.frozen) {
@@ -310,6 +336,10 @@ class Main extends Phaser.Scene {
                 super(scene, x, y);
                 this.velR = Phaser.Math.FloatBetween(-0.012 * Global.maxInitialGermSpeed, 0.012 * Global.maxInitialGermSpeed);
                 this.play('germPinkIdle');
+            }
+
+            color() {
+                return 'Pink';
             }
 
             update(time, delta) {
@@ -462,7 +492,7 @@ class Main extends Phaser.Scene {
         // Player code + controls
         //
 
-        player = this.physics.add.image(Global.width / 2, 50, 'player').setDepth(1).setCircle(16);
+        player = this.physics.add.sprite(Global.width / 2, 50, 'player').setDepth(1).setCircle(16);
 
         this.input.mouse.disableContextMenu();
         this.input.on('pointerdown', (pointer) => {
@@ -531,6 +561,7 @@ class Main extends Phaser.Scene {
 
             if (laserReady) {
                 laserReady = true; // TODO: set to false. true for testing.
+                player.play('playerLaserEmpty');
 
                 let laser = lasers.get();
 
@@ -548,6 +579,7 @@ class Main extends Phaser.Scene {
 
         if (ticking) {
             laserReady = true;
+            player.play('playerLaserReady');
             this.sound.play('reload');
 
             allGerms.forEach(i => {

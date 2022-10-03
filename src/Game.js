@@ -582,8 +582,6 @@ class Main extends Phaser.Scene {
             mouseX = pointer.x;
             mouseY = pointer.y;
 
-            this.nextStage();
-
             if (pointer.rightButtonDown()) {
                 fireLaser = true;
             }

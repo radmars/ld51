@@ -1,15 +1,17 @@
 'use strict';
 
 const Global = {
-    size: 1200,
-    width: 1200,
-    height: 1200,
-    maxPlayerSpeed: 0.001,
+    size: 800,
+    width: 800,
+    height: 800,
+    playerSpeed: Math.PI / 5 / 1000,
     freezeCooldown: 200,
     initialGerms: 4,
     maxGerms: 40,
     maxInitialGermSpeed: 0.1,
     germGravityFactor: 0.00001,
+    freezeSpeed: 600,
+    laserSpeed: 1200,
 };
 
 const center = {
@@ -46,6 +48,7 @@ class Main extends Phaser.Scene {
     }
 
     preload() {
+        this.load.image('background', 'assets/background.png');
         this.load.image('player', 'assets/player.png');
         this.load.image('laser', 'assets/laser.png');
         this.load.image('germBlue', 'assets/germ_blue.png');
@@ -53,6 +56,11 @@ class Main extends Phaser.Scene {
         this.load.image('germGreen', 'assets/germ_green.png');
         this.load.image('germPink', 'assets/germ_pink.png');
 
+        // this.load.spritesheet('player', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
+        // this.load.spritesheet('germBlue', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
+        // this.load.spritesheet('germOrange', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
+        // this.load.spritesheet('germGreen', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
+        // this.load.spritesheet('germPink', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
         this.load.spritesheet('freezeBullet', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
 
         this.load.audio('music', ['assets/ld51-main-v1.mp3']);
@@ -66,11 +74,18 @@ class Main extends Phaser.Scene {
     }
 
     create() {
+        //
         // Sound
+        //
         this.sound.pasueOnBlur = false;
         let music = this.sound.add('music');
         music.play();
 
+        //
+        // Global state
+        //
+
+        this.add.image(400, 400, 'background');
         tenSecondTimer = this.time.addEvent({
             delay: 10000,
             callback: () => {
@@ -298,7 +313,7 @@ class Main extends Phaser.Scene {
         // Bullet code
         //
 
-        class Bullet extends Phaser.Physics.Arcade.Image {
+        class Bullet extends Phaser.Physics.Arcade.Sprite {
             constructor(scene, x, y) {
                 super(scene, x, y)
 
@@ -329,7 +344,7 @@ class Main extends Phaser.Scene {
             constructor(scene, x, y) {
                 super(scene, x, y)
 
-                this.speed = Phaser.Math.GetSpeed(600, 1);
+                this.speed = Phaser.Math.GetSpeed(Global.freezeSpeed, 1);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'freezeBullet');
             }
 
@@ -344,13 +359,20 @@ class Main extends Phaser.Scene {
             constructor(scene, x, y) {
                 super(scene, x, y)
 
-                this.speed = Phaser.Math.GetSpeed(1200, 1);
+                this.speed = Phaser.Math.GetSpeed(Global.laserSpeed, 1);
                 Phaser.GameObjects.Image.call(this, scene, 0, 0, 'laser');
             }
 
             fire(x, y, angle) {
                 super.fire(x, y, angle);
                 this.scene.sound.play('laser');
+                // Need to do lots of adjustments of the bounding box because arcade physics and
+                // rotated rectangles don't get along. Only the leading tip of the laser will
+                // trigger a collision.
+                this.setCircle(10);
+                // const yOffset = Math.sin(Math.PI - angle) * 32;
+                // const xOffset = Math.cos(Math.PI - angle) * 128
+                // this.setOffset(xOffset, yOffset);
             }
         };
 
@@ -414,7 +436,7 @@ class Main extends Phaser.Scene {
 
     update(time, delta) {
         // Player rotates around center.
-        Phaser.Actions.RotateAroundDistance([player], center, Global.maxPlayerSpeed * delta, Global.size / 2 - 50);
+        Phaser.Actions.RotateAroundDistance([player], center, Global.playerSpeed * delta, Global.size / 2 - 50);
         const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
         player.angle = angleDeg + 45; // should face the center point, and the source image is rotated 45 degrees.
 

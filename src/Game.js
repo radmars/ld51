@@ -63,7 +63,7 @@ class Main extends Phaser.Scene {
         this.load.spritesheet('germPink', 'assets/germ_pink.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('freezeBullet', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
 
-        this.load.audio('music', ['assets/ld51-main-v1.mp3']);
+        this.load.audio('music', ['assets/ld51-main.m4a', 'assets/ld51-main.ogg']);
         this.load.audio('ice1', ['assets/sfx/ice1.m4a', 'assets/sfx/ice1.ogg']);
         this.load.audio('ice2', ['assets/sfx/ice2.m4a', 'assets/sfx/ice2.ogg']);
         this.load.audio('freezeshot', ['assets/sfx/freezeshot.m4a', 'assets/sfx/freezeshot.ogg']);
@@ -112,12 +112,13 @@ class Main extends Phaser.Scene {
                 germ.setCircle(16);
                 germ.setActive(true);
                 germ.enableBody(true, 0.0, 0.0, true, true);
-                germ.frozen = false;
+                germ.unfreeze();
+                germ.readyToReproduce = false;
             });
 
             // Put germs randomly within a central circle
             Phaser.Actions.RandomCircle(i.getChildren(), placementCircle);
-        })
+        });
     }
 
     create() {
@@ -125,7 +126,7 @@ class Main extends Phaser.Scene {
         // Sound
         //
         this.sound.pasueOnBlur = false;
-        let music = this.sound.add('music');
+        let music = this.sound.add('music', {volume: 0.75, loop: true});
         music.play();
 
         //
@@ -185,8 +186,7 @@ class Main extends Phaser.Scene {
                 super(scene, x, y);
                 // Constructor is only used for initial setup, and we don't want germs immediately reproducing
                 this.readyToReproduce = false;
-                this.frozen = false;
-                this.setTint(0xffffff);
+                this.unfreeze();
             }
 
             freeze() {
@@ -195,11 +195,15 @@ class Main extends Phaser.Scene {
                 this.scene.sound.play('ice1');
             }
 
+            unfreeze() {
+                this.frozen = false;
+                this.setTint(0xffffff);
+            }
+
             // Initializer for new germ produced via reproduction.
             spawn(parent) {
                 this.readyToReproduce = false;
-                this.frozen = false;
-                this.setTint(0xffffff);
+                this.unfreeze();
 
                 let x = parent.x;
                 let y = parent.y;
@@ -212,8 +216,7 @@ class Main extends Phaser.Scene {
                     return;
                 }
                 if (this.frozen) {
-                    this.frozen = false;
-                    this.setTint(0xffffff);
+                    this.unfreeze();
                     return;
                 }
 
@@ -399,7 +402,7 @@ class Main extends Phaser.Scene {
             fire(x, y, angle) {
                 this.setCircle(8);
                 super.fire(x, y, angle);
-                this.scene.sound.play('freezeshot');
+                this.scene.sound.play('freezeshot', {volume: 0.75});
                 this.play('freezeIdle');
             }
 
@@ -432,7 +435,7 @@ class Main extends Phaser.Scene {
 
             fire(x, y, angle) {
                 super.fire(x, y, angle);
-                this.scene.sound.play('laser');
+                this.scene.sound.play('laser', {volume: 0.5});
                 // Need to do lots of adjustments of the bounding box because arcade physics and
                 // rotated rectangles don't get along. Only the leading tip of the laser will
                 // trigger a collision.

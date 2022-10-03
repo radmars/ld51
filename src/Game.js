@@ -114,6 +114,8 @@ class Main extends Phaser.Scene {
         this.load.audio('laserfail', ['assets/sfx/laserfail.m4a', 'assets/sfx/laserfail.ogg']);
         this.load.audio('reload', ['assets/sfx/reload.m4a', 'assets/sfx/reload.ogg']);
         this.load.audio('split', ['assets/sfx/split.m4a', 'assets/sfx/split.ogg']);
+        this.load.audio('hit', ['assets/sfx/hit.m4a', 'assets/sfx/hit.ogg']);
+
     }
 
     addGerms() {
@@ -205,7 +207,7 @@ class Main extends Phaser.Scene {
         this.anims.create({
             key: 'freezeExplode',
             frames: this.anims.generateFrameNumbers('freezeBullet', { start: 1, end: 2 }),
-            frameRate: 5,
+            frameRate: 7,
         });
         this.anims.create({
             key: 'laser',
@@ -254,11 +256,26 @@ class Main extends Phaser.Scene {
                 this.frozen = true;
                 this.setTint(0x5555ff);
                 this.scene.sound.play('ice1');
+                this.scene.sound.play('hit', { volume: 0.75 });
+                this.stop();
+                this.unfreezeTimer = this.scene.time.addEvent({
+                    delay: 5000,
+                    callback: () => {
+                        this.unfreeze();
+                    },
+                    callbackScope: this,
+                    loop: false,
+                });
+
             }
 
             unfreeze() {
+                if(this.unfreezeTimer) this.unfreezeTimer.destroy();
                 this.frozen = false;
                 this.setTint(0xffffff);
+                if(this.readyToReproduce) this.play(`germ${this.color()}Splitting`);       
+                else this.play(`germ${this.color()}Idle`);
+
             }
 
             // Initializer for new germ produced via reproduction.
@@ -276,10 +293,13 @@ class Main extends Phaser.Scene {
                 if (!this.active) {
                     return;
                 }
+                
                 if (this.frozen) {
-                    this.unfreeze();
+                    //this.unfreeze();
+
                     return;
                 }
+                
 
                 if (this.readyToReproduce) {
                     this.readyToReproduce = false;
@@ -500,6 +520,8 @@ class Main extends Phaser.Scene {
                         that.setVisible(false);
                     },
                 });
+                this.velX = 0;
+                this.velY = 0;
                 this.play('freezeExplode');
             }
         };

@@ -15,6 +15,12 @@ const Global = {
     spawnChance: 0.25,
 };
 
+const StageVars = {
+    initialGerms: Global.initialGerms,
+    maxInitialGermSpeed: Global.maxInitialGermSpeed,
+    spawnChance: Global.spawnChance,
+};
+
 const center = {
     x: Global.width / 2,
     y: Global.height / 2,
@@ -99,7 +105,7 @@ class Main extends Phaser.Scene {
     }
 
     addGerms() {
-        for (let i = 0; i < Global.initialGerms; i++) {
+        for (let i = 0; i < StageVars.initialGerms; i++) {
             germsBlue.get({
                 key: 'germBlue', // Not sure why I need to specify this
                 visible: true,
@@ -150,6 +156,12 @@ class Main extends Phaser.Scene {
         gameOver = false;
         clickToRestart = false;
         this.sound.stopAll();
+
+        StageVars.spawnChance = Global.spawnChance;
+        StageVars.maxInitialGermSpeed = Global.maxInitialGermSpeed;
+        StageVars.initialGerms = Global.initialGerms;
+        currentStage = 1;
+
         //
         // Sound
         //
@@ -292,7 +304,7 @@ class Main extends Phaser.Scene {
                         this.scene.sound.play('split');
                     }
                 } else {
-                    if (Phaser.Math.FloatBetween(0.0, 1.0) <= Global.spawnChance) {
+                    if (Phaser.Math.FloatBetween(0.0, 1.0) <= StageVars.spawnChance) {
                         this.readyToReproduce = true;
                         this.play(`germ${this.color()}Splitting`);
                     }
@@ -303,8 +315,8 @@ class Main extends Phaser.Scene {
         class GermBlue extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                this.velX = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
-                this.velY = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
+                this.velX = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
+                this.velY = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
                 this.play('germBlueIdle');
             }
 
@@ -338,7 +350,7 @@ class Main extends Phaser.Scene {
         class GermGreen extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                this.velX = Phaser.Math.FloatBetween(-2 * Global.maxInitialGermSpeed, 2 * Global.maxInitialGermSpeed);
+                this.velX = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
                 this.play('germGreenIdle');
             }
 
@@ -368,7 +380,7 @@ class Main extends Phaser.Scene {
         class GermOrange extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                this.velY = Phaser.Math.FloatBetween(-2 * Global.maxInitialGermSpeed, 2 * Global.maxInitialGermSpeed);
+                this.velY = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
                 this.play('germOrangeIdle');
             }
 
@@ -398,7 +410,7 @@ class Main extends Phaser.Scene {
         class GermPink extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                this.velR = Phaser.Math.FloatBetween(-0.012 * Global.maxInitialGermSpeed, 0.012 * Global.maxInitialGermSpeed);
+                this.velR = Phaser.Math.FloatBetween(-0.012 * StageVars.maxInitialGermSpeed, 0.012 * StageVars.maxInitialGermSpeed);
                 this.play('germPinkIdle');
             }
 
@@ -570,6 +582,8 @@ class Main extends Phaser.Scene {
             mouseX = pointer.x;
             mouseY = pointer.y;
 
+            this.nextStage();
+
             if (pointer.rightButtonDown()) {
                 fireLaser = true;
             }
@@ -714,21 +728,18 @@ class Main extends Phaser.Scene {
 
     nextStage() {
         currentStage++;
-        if (currentStage == 11) {
+        if (currentStage == 6) {
             this.endGame(true);
             return;
         }
-        if (currentStage % 2 == 0) {
-            Global.maxInitialGermSpeed += 0.01;
+        StageVars.maxInitialGermSpeed += 0.05;
+
+        if (StageVars.spawnChance < 0.8) {
+            StageVars.spawnChance += 0.05;
         }
-        if (currentStage % 3 == 0) {
-            if (Global.spawnChance < 0.8) {
-                Global.spawnChance += 0.01;
-            }
-        }
-        if (currentStage % 4 == 0) {
-            Global.initialGerms++;
-        }
+
+        StageVars.initialGerms++;
+
         stageText.setText('Stage ' + currentStage);
         this.addGerms();
     }

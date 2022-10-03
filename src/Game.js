@@ -248,6 +248,7 @@ class Main extends Phaser.Scene {
             }
 
             freeze() {
+                if(this.unfreezeTimer) this.unfreezeTimer.destroy();
                 this.frozen = true;
                 this.setTint(0x5555ff);
                 this.scene.sound.play('ice1');

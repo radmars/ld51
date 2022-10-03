@@ -5,7 +5,7 @@ const Global = {
     width: 800,
     height: 800,
     playerSpeed: Math.PI / 5 / 1000,
-    freezeCooldown: 200,
+    freezeCooldown: 400,
     initialGerms: 3,
     maxGerms: 40,
     maxInitialGermSpeed: 0.08,
@@ -59,7 +59,7 @@ class TitleScreen extends Phaser.Scene {
 
     create() {
         this.add.image(400, 400, 'titlescreen');
-        this.sound.play('intro', {volume: 0.5});
+        this.sound.play('intro', { volume: 0.5 });
 
         this.input.on('pointerdown', (pointer) => {
             this.sound.stopAll();
@@ -80,12 +80,12 @@ class GameOverScreen extends Phaser.Scene {
 
     create() {
         this.add.image(400, 400, 'gameoverscreen');
-        this.sound.play('gameover', {volume: 0.5});
-        this.add.text(0, 0, 'GAME OVER?! CLICK TO START AGAIN?!!?!', { fill: '#00ff00' });
+        this.sound.play('gameover', { volume: 0.5 });
+        this.add.text(200, 400, 'GAME OVER?! CLICK TO START AGAIN?!!?!', { fill: '#00ff00' });
 
         this.input.on('pointerdown', (pointer) => {
             this.sound.stopAll();
-            this.scene.start('TitleScreen');
+            this.scene.start('Main');
         });
     }
 }
@@ -656,7 +656,16 @@ class Main extends Phaser.Scene {
     gameOver(didWin) {
         gameOver = true;
         if (didWin) {
-            gameOverText = this.add.text(Global.width / 2 - 250, Global.height / 2 - 250, 'YOU WIN!', { fill: '#00ff00', fontSize: '96px', fontStyle: 'bold' });
+            gameOverText = this.add.text(
+                Global.width / 2 - 250,
+                Global.height / 2 - 250,
+                'YOU WIN!',
+                {
+                    fill: '#00ff00',
+                    fontSize: '96px',
+                    fontStyle: 'bold',
+                },
+            );
             gameOverText.setDepth(10);
             this.scene.pause();
         }
@@ -695,9 +704,6 @@ const config = {
     scene: [TitleScreen, Main, GameOverScreen],
     physics: {
         default: 'arcade',
-        arcade: {
-            debug: true, // FIXME BEFORE RELEASE OMG!!!
-        },
     },
 };
 

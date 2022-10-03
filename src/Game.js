@@ -1,6 +1,7 @@
 'use strict';
 
 const Global = {
+    size: 1200,
     width: 1200,
     height: 1200,
     maxPlayerSpeed: 0.001,
@@ -16,11 +17,18 @@ const center = {
     y: Global.height / 2,
 }
 
-let ticking = false;
+let ticking = false; // Whether or not the 10-second timer is firing.
 let cursors;
 let player;
 let freezeBullets;
 let lasers;
+
+let mouseX;
+let mouseY;
+let freezeLastFired = 0;
+let laserReady = true;
+let fireFreeze = false;
+let fireLaser = false;
 
 let germsBlue;
 let germsGreen;
@@ -29,10 +37,8 @@ let germsPink;
 let allGerms;
 const poolMap = new Map();
 
-let ticker;
+let tenSecondTimer;
 let countdownText;
-let freezeLastFired = 0;
-let laserReady = true;
 
 class Main extends Phaser.Scene {
     constructor() {
@@ -58,7 +64,7 @@ class Main extends Phaser.Scene {
         let music = this.sound.add('music');
         music.play();
 
-        ticker = this.time.addEvent({
+        tenSecondTimer = this.time.addEvent({
             delay: 10000,
             callback: () => {
                 ticking = true;
@@ -79,6 +85,7 @@ class Main extends Phaser.Scene {
                 // Constructor is only used for initial setup, and we don't want germs immediately reproducing
                 this.readyToReproduce = false;
                 this.frozen = false;
+                this.setTint(0xffffff);
             }
 
             freeze() {
@@ -90,6 +97,7 @@ class Main extends Phaser.Scene {
             spawn(parent) {
                 this.readyToReproduce = false;
                 this.frozen = false;
+                this.setTint(0xffffff);
 
                 let x = parent.x;
                 let y = parent.y;
@@ -344,11 +352,23 @@ class Main extends Phaser.Scene {
         });
 
         //
-        // Player code
+        // Player code + controls
         //
 
-        player = this.physics.add.image(400, 50, 'player').setDepth(1).setCircle(16);
+        player = this.physics.add.image(Global.width / 2, 50, 'player').setDepth(1).setCircle(16);
 
+        this.input.mouse.disableContextMenu();
+        this.input.on('pointerdown', (pointer) => {
+            mouseX = pointer.x;
+            mouseY = pointer.y;
+
+            if (pointer.rightButtonDown()) {
+                fireLaser = true;
+            }
+            else {
+                fireFreeze = true;
+            }
+        });
         cursors = this.input.keyboard.createCursorKeys();
 
         //
@@ -379,33 +399,40 @@ class Main extends Phaser.Scene {
 
     update(time, delta) {
         // Player rotates around center.
-        Phaser.Actions.RotateAroundDistance([player], center, Global.maxPlayerSpeed * delta, 400);
+        Phaser.Actions.RotateAroundDistance([player], center, Global.maxPlayerSpeed * delta, Global.size / 2 - 50);
         const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
         player.angle = angleDeg + 45; // should face the center point, and the source image is rotated 45 degrees.
 
-        // Fire freeze bullet on "up".
-        if (cursors.up.isDown && time > freezeLastFired + Global.freezeCooldown) {
-            let bullet = freezeBullets.get();
+        if (fireFreeze) {
+            fireFreeze = false;
 
-            if (bullet) {
-                freezeLastFired = time;
-                let angle = Phaser.Math.Angle.BetweenPoints(player, center);
-                bullet.fire(player.x, player.y, angle);
-            }
-        }
-        // Fire laser on "down". Probably want a different button later (like space.)
-        if (cursors.down.isDown && laserReady) {
-            laserReady = true; // TODO: set to false. true for testing.
+            if (time > freezeLastFired + Global.freezeCooldown) {
+                let bullet = freezeBullets.get();
 
-            let laser = lasers.get();
-
-            if (laser) {
-                let angle = Phaser.Math.Angle.BetweenPoints(player, center);
-                laser.fire(player.x, player.y, angle);
+                if (bullet) {
+                    freezeLastFired = time;
+                    let angle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
+                    bullet.fire(player.x, player.y, angle);
+                }
             }
         }
 
-        countdownText.setText(ticker.getRemainingSeconds().toString().substr(0, 4));
+        if (fireLaser) {
+            fireLaser = false;
+
+            if (laserReady) {
+                laserReady = true; // TODO: set to false. true for testing.
+
+                let laser = lasers.get();
+
+                if (laser) {
+                    let angle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
+                    laser.fire(player.x, player.y, angle);
+                }
+            }
+        }
+
+        countdownText.setText(tenSecondTimer.getRemainingSeconds().toString().substr(0, 4));
 
         if (ticking) {
             laserReady = true;

@@ -2,7 +2,6 @@ Radmars's entry into Ludum Dare 51's Jam.
 
 # TODO
 
--   Player control (controlling rotation and/or aiming w/ mouse)
 -   Victory condition
 -   Loss condition
 -   Giving the laser a reasonable bounding box
@@ -10,3 +9,7 @@ Radmars's entry into Ludum Dare 51's Jam.
 -   Victory screen
 -   Sound fx
 -   Animated germs
+-   Title screen + logic for transitioning between scenes
+-   Come up with name for game (360 Micro-scope?)
+-   Increase visibility of player
+-   Particle effects

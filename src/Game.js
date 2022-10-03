@@ -476,9 +476,9 @@ class Main extends Phaser.Scene {
                 // rotated rectangles don't get along. Only the leading tip of the laser will
                 // trigger a collision.
                 this.setCircle(10);
-                // const yOffset = Math.sin(Math.PI - angle) * 32;
-                // const xOffset = Math.cos(Math.PI - angle) * 128
-                // this.setOffset(xOffset, yOffset);
+                const yOffset = 55 * Math.sin(angle);
+                const xOffset = 55 + 55 * Math.cos(angle);
+                this.setOffset(xOffset, yOffset);
             }
         };
 
@@ -566,7 +566,7 @@ class Main extends Phaser.Scene {
             fireLaser = false;
 
             if (laserReady) {
-                laserReady = true; // TODO: set to false. true for testing.
+                laserReady = false;
                 player.play('playerLaserEmpty');
 
                 let laser = lasers.get();

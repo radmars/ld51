@@ -6,12 +6,13 @@ const Global = {
     height: 800,
     playerSpeed: Math.PI / 5 / 1000,
     freezeCooldown: 200,
-    initialGerms: 4,
+    initialGerms: 3,
     maxGerms: 40,
-    maxInitialGermSpeed: 0.1,
+    maxInitialGermSpeed: 0.08,
     germGravityFactor: 0.00001,
     freezeSpeed: 600,
     laserSpeed: 1200,
+    spawnChance: 0.25,
 };
 
 const center = {
@@ -42,8 +43,10 @@ const poolMap = new Map();
 let tenSecondTimer;
 let countdownText;
 let gameOverText;
+let stageText;
 
 let gameOver = false;
+let currentStage = 1;
 
 class Main extends Phaser.Scene {
     constructor() {
@@ -74,6 +77,52 @@ class Main extends Phaser.Scene {
         this.load.audio('laserfail', ['assets/sfx/laserfail.m4a', 'assets/sfx/laserfail.ogg']);
         this.load.audio('reload', ['assets/sfx/reload.m4a', 'assets/sfx/reload.ogg']);
         this.load.audio('split', ['assets/sfx/split.m4a', 'assets/sfx/split.ogg']);
+    }
+
+    addGerms() {
+        for (let i = 0; i < Global.initialGerms; i++) {
+            germsBlue.get({
+                key: 'germBlue', // Not sure why I need to specify this
+                visible: true,
+                x: 0.0,
+                y: 0.0,
+                frame: 0,
+            });
+            germsGreen.get({
+                key: 'germGreen',
+                visible: true,
+                x: 0.0,
+                y: 0.0,
+                frame: 0,
+            });
+            germsOrange.get({
+                key: 'germOrange',
+                visible: true,
+                x: 0.0,
+                y: 0.0,
+                frame: 0,
+            });
+            germsPink.get({
+                key: 'germPink',
+                visible: true,
+                x: 0.0,
+                y: 0.0,
+                frame: 0,
+            });
+        }
+        const placementCircle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 250);
+        allGerms.forEach((i) => {
+            // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
+            // Also, the germs only collide with themselves after this is set for some reason.
+            i.children.each((germ) => {
+            germ.setCircle(16);
+            germ.setActive(true);
+            germ.enableBody(true, 0.0, 0.0, true, true);
+    });
+
+        // Put germs randomly within a central circle
+        Phaser.Actions.RandomCircle(i.getChildren(), placementCircle);
+    })
     }
 
     create() {
@@ -113,6 +162,10 @@ class Main extends Phaser.Scene {
         });
 
         countdownText = this.add.text(0, 0, '10.0', { fill: '#00ff00' });
+        stageText = this.add.text(0, 0, 'Stage 1', { fill: '#00ff00' });
+        stageText.x = Global.width - stageText.width - 20;
+        // dumb hack to make it taller because it doesn't know how to deal with descenders apparently
+        stageText.setFixedSize(stageText.width + 10, stageText.height + 10);
 
         //
         // Germ code
@@ -165,7 +218,7 @@ class Main extends Phaser.Scene {
                         this.scene.sound.play('split');
                     }
                 } else {
-                    if (Phaser.Math.Between(0, 4) === 0) {
+                    if (Phaser.Math.FloatBetween(0.0, 1.0) <= Global.spawnChance) {
                         this.readyToReproduce = true;
                     }
                 }
@@ -288,43 +341,9 @@ class Main extends Phaser.Scene {
         poolMap.set('GermOrange', germsOrange);
         poolMap.set('GermPink', germsPink);
 
-        germsBlue.createMultiple({
-            key: 'germBlue', // Not sure why I need to specify this
-            quantity: Global.initialGerms,
-            active: true,
-            visible: true,
-        });
-        germsGreen.createMultiple({
-            key: 'germGreen',
-            quantity: Global.initialGerms,
-            active: true,
-            visible: true,
-        });
-        germsOrange.createMultiple({
-            key: 'germOrange',
-            quantity: Global.initialGerms,
-            active: true,
-            visible: true,
-        });
-        germsPink.createMultiple({
-            key: 'germPink',
-            quantity: Global.initialGerms,
-            active: true,
-            visible: true,
-        });
-
         allGerms = [germsBlue, germsGreen, germsOrange, germsPink];
-        const placementCircle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 300);
-        allGerms.forEach((i) => {
-            // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
-            // Also, the germs only collide with themselves after this is set for some reason.
-            i.children.each((germ) => {
-                germ.setCircle(16);
-            });
 
-            // Put germs randomly within a central circle
-            Phaser.Actions.RandomCircle(i.getChildren(), placementCircle);
-        })
+        this.addGerms();
 
         //
         // Bullet code
@@ -537,15 +556,36 @@ class Main extends Phaser.Scene {
             });
         });
         if (anyAlive == false) {
-            this.gameOver(true);
+            this.nextStage();
         }
     }
 
     gameOver(didWin) {
         gameOver = true;
-        gameOverText = this.add.text(Global.width / 2 - 250, Global.height / 2, didWin ? 'YOU WIN!' : 'GAME OVER', { fill: '#00ff00', fontSize: '96px', fontStyle: 'bold' });
+        gameOverText = this.add.text(Global.width / 2 - 250, Global.height / 2 - 250, didWin ? 'YOU WIN!' : 'GAME OVER', { fill: '#00ff00', fontSize: '96px', fontStyle: 'bold' });
         gameOverText.setDepth(10);
         this.scene.pause();
+    }
+
+    nextStage() {
+        currentStage++;
+        if (currentStage == 51) {
+            this.gameOver(true);
+            return;
+        }
+        if (currentStage % 2 == 0) {
+            Global.maxInitialGermSpeed += 0.01;
+        }
+        if (currentStage % 3 == 0) {
+            if (Global.spawnChance < 0.8) {
+                Global.spawnChance += 0.01;
+            }
+        }
+        if (currentStage % 4 == 0) {
+            Global.initialGerms++;
+        }
+        stageText.setText('Stage ' + currentStage);
+        this.addGerms();
     }
 }
 

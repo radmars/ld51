@@ -47,9 +47,52 @@ let stageText;
 let gameOver = false;
 let currentStage = 1;
 
+class TitleScreen extends Phaser.Scene {
+    constructor() {
+        super('TitleScreen');
+    }
+
+    preload() {
+        this.load.image('titlescreen', 'assets/background.png');
+        this.load.audio('intro', ['assets/ld51-intro.m4a', 'assets/ld51-intro.ogg']);
+    }
+
+    create() {
+        this.add.image(400, 400, 'titlescreen');
+        this.sound.play('intro', {volume: 0.5});
+
+        this.input.on('pointerdown', (pointer) => {
+            this.sound.stopAll();
+            this.scene.start('Main');
+        });
+    }
+}
+
+class GameOverScreen extends Phaser.Scene {
+    constructor() {
+        super('GameOverScreen');
+    }
+
+    preload() {
+        this.load.image('gameoverscreen', 'assets/background.png');
+        this.load.audio('gameover', ['assets/ld51-gameover.m4a', 'assets/ld51-gameover.ogg']);
+    }
+
+    create() {
+        this.add.image(400, 400, 'gameoverscreen');
+        this.sound.play('gameover', {volume: 0.5});
+        this.add.text(0, 0, 'GAME OVER?! CLICK TO START AGAIN?!!?!', { fill: '#00ff00' });
+
+        this.input.on('pointerdown', (pointer) => {
+            this.sound.stopAll();
+            this.scene.start('TitleScreen');
+        });
+    }
+}
+
 class Main extends Phaser.Scene {
     constructor() {
-        super();
+        super('Main');
     }
 
     preload() {
@@ -612,9 +655,15 @@ class Main extends Phaser.Scene {
 
     gameOver(didWin) {
         gameOver = true;
-        gameOverText = this.add.text(Global.width / 2 - 250, Global.height / 2 - 250, didWin ? 'YOU WIN!' : 'GAME OVER', { fill: '#00ff00', fontSize: '96px', fontStyle: 'bold' });
-        gameOverText.setDepth(10);
-        this.scene.pause();
+        if (didWin) {
+            gameOverText = this.add.text(Global.width / 2 - 250, Global.height / 2 - 250, 'YOU WIN!', { fill: '#00ff00', fontSize: '96px', fontStyle: 'bold' });
+            gameOverText.setDepth(10);
+            this.scene.pause();
+        }
+        else {
+            this.sound.stopAll();
+            this.scene.start('GameOverScreen');
+        }
     }
 
     nextStage() {
@@ -643,11 +692,11 @@ const config = {
     type: Phaser.AUTO,
     width: Global.width,
     height: Global.height,
-    scene: [Main],
+    scene: [TitleScreen, Main, GameOverScreen],
     physics: {
         default: 'arcade',
         arcade: {
-            debug: true,
+            debug: true, // FIXME BEFORE RELEASE OMG!!!
         },
     },
 };

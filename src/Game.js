@@ -21,7 +21,6 @@ const center = {
 }
 
 let ticking = false; // Whether or not the 10-second timer is firing.
-let cursors;
 let player;
 let freezeBullets;
 let lasers;
@@ -55,18 +54,13 @@ class Main extends Phaser.Scene {
 
     preload() {
         this.load.image('background', 'assets/background.png');
-        this.load.image('player', 'assets/player.png');
         this.load.image('laser', 'assets/laser.png');
-        this.load.image('germBlue', 'assets/germ_blue.png');
-        this.load.image('germOrange', 'assets/germ_orange.png');
-        this.load.image('germGreen', 'assets/germ_green.png');
-        this.load.image('germPink', 'assets/germ_pink.png');
 
-        // this.load.spritesheet('player', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
-        // this.load.spritesheet('germBlue', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
-        // this.load.spritesheet('germOrange', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
-        // this.load.spritesheet('germGreen', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
-        // this.load.spritesheet('germPink', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
+        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('germBlue', 'assets/germ_blue.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('germOrange', 'assets/germ_orange.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('germGreen', 'assets/germ_green.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('germPink', 'assets/germ_pink.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('freezeBullet', 'assets/freezeBullet.png', { frameWidth: 16, frameHeight: 16 });
 
         this.load.audio('music', ['assets/ld51-main-v1.mp3']);
@@ -115,14 +109,15 @@ class Main extends Phaser.Scene {
             // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
             // Also, the germs only collide with themselves after this is set for some reason.
             i.children.each((germ) => {
-            germ.setCircle(16);
-            germ.setActive(true);
-            germ.enableBody(true, 0.0, 0.0, true, true);
-    });
+                germ.setCircle(16);
+                germ.setActive(true);
+                germ.enableBody(true, 0.0, 0.0, true, true);
+                germ.frozen = false;
+            });
 
-        // Put germs randomly within a central circle
-        Phaser.Actions.RandomCircle(i.getChildren(), placementCircle);
-    })
+            // Put germs randomly within a central circle
+            Phaser.Actions.RandomCircle(i.getChildren(), placementCircle);
+        })
     }
 
     create() {
@@ -160,6 +155,20 @@ class Main extends Phaser.Scene {
             frames: this.anims.generateFrameNumbers('freezeBullet', { start: 1, end: 2 }),
             frameRate: 5,
         });
+        ['Blue', 'Green', 'Orange', 'Pink'].forEach(i => {
+            this.anims.create({
+                key: `germ${i}Idle`,
+                frames: this.anims.generateFrameNumbers(`germ${i}`, { start: 0, end: 1 }),
+                frameRate: 3,
+                repeat: -1,
+            });
+            this.anims.create({
+                key: `germ${i}Splitting`,
+                frames: this.anims.generateFrameNumbers(`germ${i}`, { start: 2, end: 3 }),
+                frameRate: 3,
+                repeat: -1,
+            });
+        });
 
         countdownText = this.add.text(0, 0, '10.0', { fill: '#00ff00' });
         stageText = this.add.text(0, 0, 'Stage 1', { fill: '#00ff00' });
@@ -171,7 +180,7 @@ class Main extends Phaser.Scene {
         // Germ code
         //
 
-        class Germ extends Phaser.Physics.Arcade.Image {
+        class Germ extends Phaser.Physics.Arcade.Sprite {
             constructor(scene, x, y) {
                 super(scene, x, y);
                 // Constructor is only used for initial setup, and we don't want germs immediately reproducing
@@ -228,9 +237,9 @@ class Main extends Phaser.Scene {
         class GermBlue extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germBlue');
                 this.velX = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
                 this.velY = Phaser.Math.FloatBetween(-Global.maxInitialGermSpeed, Global.maxInitialGermSpeed);
+                this.play('germBlueIdle');
             }
 
             update(time, delta) {
@@ -254,8 +263,8 @@ class Main extends Phaser.Scene {
         class GermGreen extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germGreen');
                 this.velX = Phaser.Math.FloatBetween(-2 * Global.maxInitialGermSpeed, 2 * Global.maxInitialGermSpeed);
+                this.play('germGreenIdle');
             }
 
             update(time, delta) {
@@ -275,8 +284,8 @@ class Main extends Phaser.Scene {
         class GermOrange extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germOrange');
                 this.velY = Phaser.Math.FloatBetween(-2 * Global.maxInitialGermSpeed, 2 * Global.maxInitialGermSpeed);
+                this.play('germOrangeIdle');
             }
 
             update(time, delta) {
@@ -296,8 +305,8 @@ class Main extends Phaser.Scene {
         class GermPink extends Germ {
             constructor(scene, x, y) {
                 super(scene, x, y);
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'germPink');
                 this.velR = Phaser.Math.FloatBetween(-0.012 * Global.maxInitialGermSpeed, 0.012 * Global.maxInitialGermSpeed);
+                this.play('germPinkIdle');
             }
 
             update(time, delta) {
@@ -464,7 +473,6 @@ class Main extends Phaser.Scene {
                 fireFreeze = true;
             }
         });
-        cursors = this.input.keyboard.createCursorKeys();
 
         //
         // Collision code
@@ -513,8 +521,6 @@ class Main extends Phaser.Scene {
                     bullet.fire(player.x, player.y, angle);
                 }
             }
-        } else if (cursors.down.isDown && !laserReady) {
-            this.sound.play('laserfail');
         }
 
         if (fireLaser) {
@@ -529,6 +535,9 @@ class Main extends Phaser.Scene {
                     let angle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
                     laser.fire(player.x, player.y, angle);
                 }
+            }
+            else {
+                this.sound.play('laserfail');
             }
         }
 

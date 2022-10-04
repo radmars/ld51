@@ -143,8 +143,8 @@ class Main extends Phaser.Scene {
                 germ.setCircle(16);
                 germ.setActive(true);
                 germ.enableBody(true, 0.0, 0.0, true, true);
-                germ.unfreeze();
                 germ.readyToReproduce = false;
+                germ.unfreeze();
             });
 
             // Put germs randomly within a central circle
@@ -247,8 +247,17 @@ class Main extends Phaser.Scene {
                 console.log("Error: called 'color()' on Germ class!");
             }
 
+            die() {
+                this.disableBody(true, true);
+                this.setActive(false);
+
+                // Also clean up the object in preparation for its reuse from the pool.
+                this.readyToReproduce = false;
+                this.unfreeze();
+            }
+
             freeze() {
-                if(this.unfreezeTimer) this.unfreezeTimer.destroy();
+                if (this.unfreezeTimer) this.unfreezeTimer.destroy();
                 this.frozen = true;
                 this.setTint(0x5555ff);
                 this.scene.sound.play('ice1');
@@ -262,16 +271,14 @@ class Main extends Phaser.Scene {
                     callbackScope: this,
                     loop: false,
                 });
-
             }
 
             unfreeze() {
-                if(this.unfreezeTimer) this.unfreezeTimer.destroy();
+                if (this.unfreezeTimer) this.unfreezeTimer.destroy();
                 this.frozen = false;
                 this.setTint(0xffffff);
-                if(this.readyToReproduce) this.play(`germ${this.color()}Splitting`);       
+                if (this.readyToReproduce) this.play(`germ${this.color()}Splitting`);
                 else this.play(`germ${this.color()}Idle`);
-
             }
 
             // Initializer for new germ produced via reproduction.
@@ -289,7 +296,7 @@ class Main extends Phaser.Scene {
                 if (!this.active) {
                     return;
                 }
-                
+
                 if (this.frozen) {
                     return;
                 }
@@ -607,8 +614,7 @@ class Main extends Phaser.Scene {
                 germ.freeze();
             });
             this.physics.add.collider(lasers, allGerms[i], (laser, germ) => {
-                germ.disableBody(true, true);
-                germ.setActive(false);
+                germ.die();
                 this.sound.play('hit', { volume: 0.75 });
             });
             this.physics.add.collider(player, allGerms[i], (player, germ) => {

@@ -63,7 +63,7 @@ class RadmarsScreen extends Phaser.Scene {
         this.load.image('bg', 'assets/intro/intro_bg.png');
         this.load.image('mars', 'assets/intro/intro_mars.png');
 
-        this.load.spritesheet('glasses', 'assets/intro/intro_glasses.png', { frameWidth: 72, frameHeight: 12 });
+        this.load.spritesheet('glasses', 'assets/intro/intro_glasses.png', { frameWidth: 72, frameHeight: 12, spacing: 1 });
         this.load.spritesheet('radmars', 'assets/intro/intro_radmars.png', { frameWidth: 96, frameHeight: 14 });
 
         this.load.audio('radmarslogo', ['assets/intro/radmarslogo.m4a', 'assets/intro/radmarslogo.ogg']);

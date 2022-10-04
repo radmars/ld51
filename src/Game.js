@@ -252,6 +252,7 @@ class Main extends Phaser.Scene {
         // Global state
         //
 
+        this.input.setDefaultCursor('url(assets/reticle.png), pointer');
         this.add.image(400, 400, 'background');
         tenSecondTimer = this.time.addEvent({
             delay: 10000,

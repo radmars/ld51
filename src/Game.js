@@ -93,7 +93,7 @@ class RadmarsScreen extends Phaser.Scene {
         this.sound.play('radmarslogo', { volume: 0.5 });
 
         this.add.image(Global.width / 2, Global.height / 2, 'bg').setScale(2);
-        let radmarsGlasses = this.add.sprite(Global.width / 2, 0, 'glasses').setScale(2);
+        let radmarsGlasses = this.add.sprite(Global.width / 2, Global.height / 6, 'glasses').setScale(2);
         radmarsGlasses.play('glassesIdle');
         let radmarsText = this.add.sprite(Global.width / 2, Global.width / 2 + 100, 'mars').setScale(2);
 
@@ -126,7 +126,7 @@ class RadmarsScreen extends Phaser.Scene {
             })
         });
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-            this.scene.start('Main');
+            this.scene.start('TitleScreen');
         });
 
         this.cameras.main.fadeIn(1000);
@@ -144,12 +144,20 @@ class TitleScreen extends Phaser.Scene {
     }
 
     create() {
+        this.cameras.main.fadeIn(1000);
         this.add.image(400, 400, 'titlescreen');
         this.sound.play('intro', { volume: 0.5 });
 
         this.input.on('pointerdown', (pointer) => {
-            this.sound.stopAll();
-            this.scene.start('RadmarsScreen');
+            this.cameras.main.fadeOut(1000);
+            this.time.addEvent({
+                delay: 1000,
+                callback: () => {
+                    this.sound.stopAll();
+                    this.scene.start('Main');
+                }
+            })
+
         });
     }
 }
@@ -232,6 +240,7 @@ class Main extends Phaser.Scene {
     }
 
     create() {
+        this.cameras.main.fadeIn(1000);
         gameOver = false;
         clickToRestart = false;
         this.sound.stopAll();
@@ -834,7 +843,7 @@ const config = {
     type: Phaser.AUTO,
     width: Global.width,
     height: Global.height,
-    scene: [TitleScreen, RadmarsScreen, Main],
+    scene: [RadmarsScreen, TitleScreen, Main],
     physics: {
         default: 'arcade',
     },

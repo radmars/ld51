@@ -6,6 +6,6 @@ export default {
   width: Global.width,
   height: Global.height,
   physics: {
-      default: 'arcade',
+    default: 'arcade',
   },
 };

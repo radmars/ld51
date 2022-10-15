@@ -57,8 +57,8 @@ class Germ extends Phaser.Physics.Arcade.Sprite {
         this.readyToReproduce = false;
         this.unfreeze();
 
-        let x = parent.x;
-        let y = parent.y;
+        const x = parent.x;
+        const y = parent.y;
         this.enableBody(true, x, y, true, true);
         this.setCircle(16);
     }
@@ -76,7 +76,7 @@ class Germ extends Phaser.Physics.Arcade.Sprite {
             this.readyToReproduce = false;
             this.play(`germ${this.color()}Idle`);
 
-            let germ = germPoolMap.get(this.constructor.name).get();
+            const germ = germPoolMap.get(this.constructor.name).get();
 
             if (germ) {
                 germ.spawn(this);
@@ -89,7 +89,7 @@ class Germ extends Phaser.Physics.Arcade.Sprite {
             }
         }
     }
-};
+}
 
 class GermBlue extends Germ {
     velX: number;
@@ -128,7 +128,7 @@ class GermBlue extends Germ {
         this.velY = parent.velY;
         super.spawn(parent);
     }
-};
+}
 
 class GermGreen extends Germ {
     velX: number;
@@ -161,7 +161,7 @@ class GermGreen extends Germ {
         this.velX = parent.velX;
         super.spawn(parent);
     }
-};
+}
 
 class GermOrange extends Germ {
     velY: number;
@@ -194,7 +194,7 @@ class GermOrange extends Germ {
         this.velY = parent.velY;
         super.spawn(parent);
     }
-};
+}
 
 class GermPink extends Germ {
     velR: number;
@@ -227,4 +227,4 @@ class GermPink extends Germ {
         this.velR = parent.velR;
         super.spawn(parent);
     }
-};
+}

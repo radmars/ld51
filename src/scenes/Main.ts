@@ -1,4 +1,4 @@
-import Phaser, { Scene } from 'phaser';
+import Phaser from 'phaser';
 import { constants, center } from '../constants';
 import { GermBlue, GermGreen, GermOrange, GermPink } from '../Germs';
 import { StageVars } from '../StageVars';
@@ -99,7 +99,7 @@ export default class Main extends Phaser.Scene {
         // Sound
         //
         this.sound.pauseOnBlur = false;
-        let music = this.sound.add('music', { volume: 0.75, loop: true });
+        const music = this.sound.add('music', { volume: 0.75, loop: true });
         music.play();
 
         //
@@ -231,7 +231,7 @@ export default class Main extends Phaser.Scene {
                     this.disableBody(true, true);
                 }
             }
-        };
+        }
 
         class FreezeBullet extends Bullet {
             speed = Phaser.Math.GetSpeed(constants.freezeSpeed, 1);
@@ -249,7 +249,6 @@ export default class Main extends Phaser.Scene {
             }
 
             explode() {
-                let that = this;
                 this.disableBody();
                 // Feels like an event listener would be best for this, but it keeps triggering after the animation completes.
                 // this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
@@ -260,14 +259,14 @@ export default class Main extends Phaser.Scene {
                     delay: 300,
                     callback: () => {
                         this.setActive(false);
-                        that.setVisible(false);
+                        this.setVisible(false);
                     },
                 });
                 this.velX = 0;
                 this.velY = 0;
                 this.play('freezeExplode');
             }
-        };
+        }
 
         class Laser extends Bullet {
             speed = Phaser.Math.GetSpeed(constants.laserSpeed, 1);
@@ -289,7 +288,7 @@ export default class Main extends Phaser.Scene {
                 const xOffset = 55 + 55 * Math.cos(angle);
                 this.setOffset(xOffset, yOffset);
             }
-        };
+        }
 
         freezeBullets = this.physics.add.group({
             classType: FreezeBullet,
@@ -368,11 +367,11 @@ export default class Main extends Phaser.Scene {
             fireFreeze = false;
 
             if (time > freezeLastFired + constants.freezeCooldown) {
-                let bullet = freezeBullets.get();
+                const bullet = freezeBullets.get();
 
                 if (bullet) {
                     freezeLastFired = time;
-                    let angle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
+                    const angle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
                     bullet.fire(player.x, player.y, angle);
                 }
             }
@@ -385,10 +384,10 @@ export default class Main extends Phaser.Scene {
                 laserReady = false;
                 player.play('playerLaserEmpty');
 
-                let laser = lasers.get();
+                const laser = lasers.get();
 
                 if (laser) {
-                    let angle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
+                    const angle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
                     laser.fire(player.x, player.y, angle);
                 }
             }

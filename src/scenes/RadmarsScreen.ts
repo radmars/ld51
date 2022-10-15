@@ -40,9 +40,9 @@ export default class RadmarsScreen extends Phaser.Scene {
         this.sound.play('radmarslogo', { volume: 0.5 });
 
         this.add.image(constants.width / 2, constants.height / 2, 'bg').setScale(2);
-        let radmarsGlasses = this.add.sprite(constants.width / 2, constants.height / 6, 'glasses').setScale(2);
+        const radmarsGlasses = this.add.sprite(constants.width / 2, constants.height / 6, 'glasses').setScale(2);
         radmarsGlasses.play('glassesIdle');
-        let radmarsText = this.add.sprite(constants.width / 2, constants.width / 2 + 100, 'mars').setScale(2);
+        const radmarsText = this.add.sprite(constants.width / 2, constants.width / 2 + 100, 'mars').setScale(2);
 
         this.tweens.add({
             targets: radmarsGlasses,

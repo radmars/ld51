@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { Global } from './constants';
+import { constants } from './constants';
 
 export default {
   type: Phaser.AUTO,
-  width: Global.width,
-  height: Global.height,
+  width: constants.width,
+  height: constants.height,
   physics: {
     default: 'arcade',
   },

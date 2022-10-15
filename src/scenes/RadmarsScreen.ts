@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Global } from '../constants';
+import { constants } from '../constants';
 
 export default class RadmarsScreen extends Phaser.Scene {
     constructor() {
@@ -39,14 +39,14 @@ export default class RadmarsScreen extends Phaser.Scene {
 
         this.sound.play('radmarslogo', { volume: 0.5 });
 
-        this.add.image(Global.width / 2, Global.height / 2, 'bg').setScale(2);
-        let radmarsGlasses = this.add.sprite(Global.width / 2, Global.height / 6, 'glasses').setScale(2);
+        this.add.image(constants.width / 2, constants.height / 2, 'bg').setScale(2);
+        let radmarsGlasses = this.add.sprite(constants.width / 2, constants.height / 6, 'glasses').setScale(2);
         radmarsGlasses.play('glassesIdle');
-        let radmarsText = this.add.sprite(Global.width / 2, Global.width / 2 + 100, 'mars').setScale(2);
+        let radmarsText = this.add.sprite(constants.width / 2, constants.width / 2 + 100, 'mars').setScale(2);
 
         this.tweens.add({
             targets: radmarsGlasses,
-            y: Global.height / 2,
+            y: constants.height / 2,
             ease: 'Linear',
             duration: 1600,
             onComplete: () => {

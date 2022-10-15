@@ -1,16 +1,7 @@
 import Phaser, { Scene } from 'phaser';
-import { Global } from '../constants';
-
-const StageVars = {
-    initialGerms: Global.initialGerms,
-    maxInitialGermSpeed: Global.maxInitialGermSpeed,
-    spawnChance: Global.spawnChance,
-};
-
-const center = {
-    x: Global.width / 2,
-    y: Global.height / 2,
-}
+import { constants, center } from '../constants';
+import { GermBlue, GermGreen, GermOrange, GermPink } from '../Germs';
+import { StageVars } from '../StageVars';
 
 let ticking = false; // Whether or not the 10-second timer is firing.
 let player: Phaser.Physics.Arcade.Sprite;
@@ -29,14 +20,14 @@ let germsGreen: Phaser.Physics.Arcade.Group;
 let germsOrange: Phaser.Physics.Arcade.Group;
 let germsPink: Phaser.Physics.Arcade.Group;
 let allGerms: Phaser.Physics.Arcade.Group[];
-const poolMap = new Map();
+export const germPoolMap = new Map();
 
 let tenSecondTimer: Phaser.Time.TimerEvent;
 let countdownText: Phaser.GameObjects.Text;
 let gameOverText: Phaser.GameObjects.Text;
 let stageText: Phaser.GameObjects.Text;
 
-let gameOver = false;
+export let gameOver = false;
 let clickToRestart = false;
 let currentStage = 1;
 
@@ -76,7 +67,7 @@ export default class Main extends Phaser.Scene {
             germsOrange.get();
             germsPink.get();
         }
-        const placementCircle = new Phaser.Geom.Circle(Global.width / 2, Global.height / 2, 250);
+        const placementCircle = new Phaser.Geom.Circle(constants.width / 2, constants.height / 2, 250);
         allGerms.forEach((i) => {
             // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
             // Also, the germs only collide with themselves after this is set for some reason.
@@ -99,9 +90,9 @@ export default class Main extends Phaser.Scene {
         clickToRestart = false;
         this.sound.stopAll();
 
-        StageVars.spawnChance = Global.spawnChance;
-        StageVars.maxInitialGermSpeed = Global.maxInitialGermSpeed;
-        StageVars.initialGerms = Global.initialGerms;
+        StageVars.spawnChance = constants.spawnChance;
+        StageVars.maxInitialGermSpeed = constants.maxInitialGermSpeed;
+        StageVars.initialGerms = constants.initialGerms;
         currentStage = 1;
 
         //
@@ -170,258 +161,35 @@ export default class Main extends Phaser.Scene {
 
         countdownText = this.add.text(0, 0, '10.0', { fill: '#00ff00' });
         stageText = this.add.text(0, 0, 'Stage 1', { fill: '#00ff00' });
-        stageText.x = Global.width - stageText.width - 20;
+        stageText.x = constants.width - stageText.width - 20;
         // dumb hack to make it taller because it doesn't know how to deal with descenders apparently
         stageText.setFixedSize(stageText.width + 10, stageText.height + 10);
 
-        //
-        // Germ code
-        //
-
-        class Germ extends Phaser.Physics.Arcade.Sprite {
-            readyToReproduce: boolean;
-            unfreezeTimer: Phaser.Time.TimerEvent;
-            frozen: boolean;
-            velX: number;
-            velY: number;
-
-            constructor(scene: Phaser.Scene, x: number, y: number) {
-                super(scene, x, y);
-                // Constructor is only used for initial setup, and we don't want germs immediately reproducing
-                this.readyToReproduce = false;
-                this.unfreeze();
-            }
-            color() {
-                // Meant as an abstract method.
-                console.log("Error: called 'color()' on Germ class!");
-            }
-
-            die() {
-                this.disableBody(true, true);
-                this.setActive(false);
-
-                // Also clean up the object in preparation for its reuse from the pool.
-                this.readyToReproduce = false;
-                this.unfreeze();
-            }
-
-            freeze() {
-                if (this.unfreezeTimer) this.unfreezeTimer.destroy();
-                this.frozen = true;
-                this.setTint(0x5555ff);
-                this.scene.sound.play('ice1');
-                this.scene.sound.play('hit', { volume: 0.75 });
-                this.stop();
-                this.unfreezeTimer = this.scene.time.addEvent({
-                    delay: 5000,
-                    callback: () => {
-                        this.unfreeze();
-                    },
-                    callbackScope: this,
-                    loop: false,
-                });
-            }
-
-            unfreeze() {
-                if (this.unfreezeTimer) this.unfreezeTimer.destroy();
-                this.frozen = false;
-                this.setTint(0xffffff);
-                if (this.readyToReproduce) this.play(`germ${this.color()}Splitting`);
-                else this.play(`germ${this.color()}Idle`);
-            }
-
-            // Initializer for new germ produced via reproduction.
-            spawn(parent: Germ) {
-                this.readyToReproduce = false;
-                this.unfreeze();
-
-                let x = parent.x;
-                let y = parent.y;
-                this.enableBody(true, x, y, true, true);
-                this.setCircle(16);
-            }
-
-            tickBehavior() {
-                if (!this.active) {
-                    return;
-                }
-
-                if (this.frozen) {
-                    return;
-                }
-
-                if (this.readyToReproduce) {
-                    this.readyToReproduce = false;
-                    this.play(`germ${this.color()}Idle`);
-
-                    let germ = poolMap.get(this.constructor.name).get();
-
-                    if (germ) {
-                        germ.spawn(this);
-                        this.scene.sound.play('split');
-                    }
-                } else {
-                    if (Phaser.Math.FloatBetween(0.0, 1.0) <= StageVars.spawnChance) {
-                        this.readyToReproduce = true;
-                        this.play(`germ${this.color()}Splitting`);
-                    }
-                }
-            }
-        };
-
-        class GermBlue extends Germ {
-            constructor(scene, x, y) {
-                super(scene, x, y);
-                this.velX = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
-                this.velY = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
-                this.play('germBlueIdle');
-            }
-
-            color() {
-                return 'Blue';
-            }
-
-            update(time: number, delta: number) {
-                if (gameOver) {
-                    this.stop();
-                    return;
-                }
-
-                super.update(time, delta);
-                if (this.frozen) {
-                    return;
-                }
-                // Pull toward the center
-                this.velX += (center.x - this.x) * Global.germGravityFactor;
-                this.velY += (center.y - this.y) * Global.germGravityFactor;
-                this.x += this.velX * delta;
-                this.y += this.velY * delta;
-            }
-
-            spawn(parent: GermBlue) {
-                this.velX = parent.velX;
-                this.velY = parent.velY;
-                super.spawn(parent);
-            }
-        };
-        class GermGreen extends Germ {
-            constructor(scene, x, y) {
-                super(scene, x, y);
-                this.velX = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
-                this.play('germGreenIdle');
-            }
-
-            color() {
-                return 'Green';
-            }
-
-            update(time: number, delta: number) {
-                if (gameOver) {
-                    this.stop();
-                    return;
-                }
-
-                super.update(time, delta);
-                if (this.frozen) {
-                    return;
-                }
-                this.velX += (center.x - this.x) * 2 * Global.germGravityFactor;
-                this.x += this.velX * delta;
-            }
-
-            spawn(parent: GermGreen) {
-                this.velX = parent.velX;
-                super.spawn(parent);
-            }
-        };
-        class GermOrange extends Germ {
-            constructor(scene, x, y) {
-                super(scene, x, y);
-                this.velY = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
-                this.play('germOrangeIdle');
-            }
-
-            color() {
-                return 'Orange';
-            }
-
-            update(time: number, delta: number) {
-                if (gameOver) {
-                    this.stop();
-                    return;
-                }
-
-                super.update(time, delta);
-                if (this.frozen) {
-                    return;
-                }
-                this.velY += (center.y - this.y) * 2 * Global.germGravityFactor;
-                this.y += this.velY * delta;
-            }
-
-            spawn(parent: GermOrange) {
-                this.velY = parent.velY;
-                super.spawn(parent);
-            }
-        };
-        class GermPink extends Germ {
-            velR: number;
-
-            constructor(scene, x, y) {
-                super(scene, x, y);
-                this.velR = Phaser.Math.FloatBetween(-0.012 * StageVars.maxInitialGermSpeed, 0.012 * StageVars.maxInitialGermSpeed);
-                this.play('germPinkIdle');
-            }
-
-            color() {
-                return 'Pink';
-            }
-
-            update(time: number, delta: number) {
-                if (gameOver) {
-                    this.stop();
-                    return;
-                }
-
-                super.update(time, delta);
-                if (this.frozen) {
-                    return;
-                }
-                // Rotate around center
-                Phaser.Actions.RotateAroundDistance([this], center, this.velR * delta, Phaser.Math.Distance.BetweenPoints(center, this));
-            }
-
-            spawn(parent: GermPink) {
-                this.velR = parent.velR;
-                super.spawn(parent);
-            }
-        };
-
         germsBlue = this.physics.add.group({
             classType: GermBlue,
-            maxSize: Global.maxGerms,
+            maxSize: constants.maxGerms,
             runChildUpdate: true,
         });
         germsGreen = this.physics.add.group({
             classType: GermGreen,
-            maxSize: Global.maxGerms,
+            maxSize: constants.maxGerms,
             runChildUpdate: true,
         });
         germsOrange = this.physics.add.group({
             classType: GermOrange,
-            maxSize: Global.maxGerms,
+            maxSize: constants.maxGerms,
             runChildUpdate: true,
         });
         germsPink = this.physics.add.group({
             classType: GermPink,
-            maxSize: Global.maxGerms,
+            maxSize: constants.maxGerms,
             runChildUpdate: true,
         });
 
-        poolMap.set('GermBlue', germsBlue);
-        poolMap.set('GermGreen', germsGreen);
-        poolMap.set('GermOrange', germsOrange);
-        poolMap.set('GermPink', germsPink);
+        germPoolMap.set('GermBlue', germsBlue);
+        germPoolMap.set('GermGreen', germsGreen);
+        germPoolMap.set('GermOrange', germsOrange);
+        germPoolMap.set('GermPink', germsPink);
 
         allGerms = [germsBlue, germsGreen, germsOrange, germsPink];
 
@@ -459,14 +227,14 @@ export default class Main extends Phaser.Scene {
                 this.x += delta * this.velY;
                 this.y += delta * this.velX;
 
-                if (this.y < 0 || this.y > Global.height || this.x < 0 || this.x > Global.width) {
+                if (this.y < 0 || this.y > constants.height || this.x < 0 || this.x > constants.width) {
                     this.disableBody(true, true);
                 }
             }
         };
 
         class FreezeBullet extends Bullet {
-            speed = Phaser.Math.GetSpeed(Global.freezeSpeed, 1);
+            speed = Phaser.Math.GetSpeed(constants.freezeSpeed, 1);
             constructor(scene: Phaser.Scene, x: number, y: number) {
                 super(scene, x, y)
 
@@ -502,7 +270,7 @@ export default class Main extends Phaser.Scene {
         };
 
         class Laser extends Bullet {
-            speed = Phaser.Math.GetSpeed(Global.laserSpeed, 1);
+            speed = Phaser.Math.GetSpeed(constants.laserSpeed, 1);
 
             constructor(scene: Phaser.Scene, x: number, y: number) {
                 super(scene, x, y)
@@ -539,7 +307,7 @@ export default class Main extends Phaser.Scene {
         // Player code + controls
         //
 
-        player = this.physics.add.sprite(Global.width / 2, 50, 'player').setDepth(1).setCircle(16);
+        player = this.physics.add.sprite(constants.width / 2, 50, 'player').setDepth(1).setCircle(16);
 
         this.input.mouse.disableContextMenu();
         this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -592,14 +360,14 @@ export default class Main extends Phaser.Scene {
         }
 
         // Player rotates around center.
-        Phaser.Actions.RotateAroundDistance([player], center, Global.playerSpeed * delta, Global.size / 2 - 50);
+        Phaser.Actions.RotateAroundDistance([player], center, constants.playerSpeed * delta, constants.size / 2 - 50);
         const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
         player.angle = angleDeg + 45; // should face the center point, and the source image is rotated 45 degrees.
 
         if (fireFreeze) {
             fireFreeze = false;
 
-            if (time > freezeLastFired + Global.freezeCooldown) {
+            if (time > freezeLastFired + constants.freezeCooldown) {
                 let bullet = freezeBullets.get();
 
                 if (bullet) {
@@ -661,8 +429,8 @@ export default class Main extends Phaser.Scene {
     endGame(didWin: boolean) {
         gameOver = true;
         gameOverText = this.add.text(
-            Global.width / 2 - 250,
-            Global.height / 2 - 250,
+            constants.width / 2 - 250,
+            constants.height / 2 - 250,
             didWin ? 'YOU WIN!' : 'GAME OVER',
             {
                 fill: '#00ff00',

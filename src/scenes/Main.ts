@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { constants, center } from '../constants';
-import { GermBlue, GermGreen, GermOrange, GermPink } from '../Germs';
+import { Germ, GermBlue, GermGreen, GermOrange, GermPink } from '../Germs';
+import { FreezeBullet, Laser } from '../Bullets';
 import { StageVars } from '../StageVars';
 
 let ticking = false; // Whether or not the 10-second timer is firing.
@@ -72,11 +73,12 @@ export default class Main extends Phaser.Scene {
             // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
             // Also, the germs only collide with themselves after this is set for some reason.
             i.children.each((germ) => {
-                germ.setCircle(16);
+                // TODO: Is there some way to do this type assertion once instead of for each statement?
+                (germ as Germ).setCircle(16);
                 germ.setActive(true);
-                germ.enableBody(true, 0.0, 0.0, true, true);
-                germ.readyToReproduce = false;
-                germ.unfreeze();
+                (germ as Germ).enableBody(true, 0.0, 0.0, true, true);
+                (germ as Germ).readyToReproduce = false;
+                (germ as Germ).unfreeze();
             });
 
             // Put germs randomly within a central circle
@@ -159,8 +161,8 @@ export default class Main extends Phaser.Scene {
             });
         });
 
-        countdownText = this.add.text(0, 0, '10.0', { fill: '#00ff00' });
-        stageText = this.add.text(0, 0, 'Stage 1', { fill: '#00ff00' });
+        countdownText = this.add.text(0, 0, '10.0', { color: '#00ff00' });
+        stageText = this.add.text(0, 0, 'Stage 1', { color: '#00ff00' });
         stageText.x = constants.width - stageText.width - 20;
         // dumb hack to make it taller because it doesn't know how to deal with descenders apparently
         stageText.setFixedSize(stageText.width + 10, stageText.height + 10);
@@ -194,101 +196,6 @@ export default class Main extends Phaser.Scene {
         allGerms = [germsBlue, germsGreen, germsOrange, germsPink];
 
         this.addGerms();
-
-        //
-        // Bullet code
-        //
-
-        abstract class Bullet extends Phaser.Physics.Arcade.Sprite {
-            velX: number;
-            velY: number;
-            abstract speed: number;
-
-            constructor(scene: Phaser.Scene, x: number, y: number) {
-                super(scene, x, y)
-
-                this.velX = 0;
-                this.velY = 0;
-            }
-
-            fire(x: number, y: number, angle: number) {
-                this.enableBody(true, x, y, true, true)
-                this.setActive(true);
-                this.setVisible(true);
-
-                this.setRotation(angle);
-                this.velX = this.speed * Math.sin(this.rotation);
-                this.velY = this.speed * Math.cos(this.rotation);
-            }
-
-            update(time: number, delta: number) {
-                super.update(time, delta);
-
-                this.x += delta * this.velY;
-                this.y += delta * this.velX;
-
-                if (this.y < 0 || this.y > constants.height || this.x < 0 || this.x > constants.width) {
-                    this.disableBody(true, true);
-                }
-            }
-        }
-
-        class FreezeBullet extends Bullet {
-            speed = Phaser.Math.GetSpeed(constants.freezeSpeed, 1);
-            constructor(scene: Phaser.Scene, x: number, y: number) {
-                super(scene, x, y)
-
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'freezeBullet');
-            }
-
-            fire(x: number, y: number, angle: number) {
-                this.setCircle(8);
-                super.fire(x, y, angle);
-                this.scene.sound.play('freezeshot', { volume: 0.75 });
-                this.play('freezeIdle');
-            }
-
-            explode() {
-                this.disableBody();
-                // Feels like an event listener would be best for this, but it keeps triggering after the animation completes.
-                // this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-                //     this.setActive(false);
-                //     this.setVisible(false);
-                // })
-                this.scene.time.addEvent({
-                    delay: 300,
-                    callback: () => {
-                        this.setActive(false);
-                        this.setVisible(false);
-                    },
-                });
-                this.velX = 0;
-                this.velY = 0;
-                this.play('freezeExplode');
-            }
-        }
-
-        class Laser extends Bullet {
-            speed = Phaser.Math.GetSpeed(constants.laserSpeed, 1);
-
-            constructor(scene: Phaser.Scene, x: number, y: number) {
-                super(scene, x, y)
-
-                this.play('laser');
-            }
-
-            fire(x: number, y: number, angle: number) {
-                super.fire(x, y, angle);
-                this.scene.sound.play('laser', { volume: 0.5 });
-                // Need to do lots of adjustments of the bounding box because arcade physics and
-                // rotated rectangles don't get along. Only the leading tip of the laser will
-                // trigger a collision.
-                this.setCircle(10);
-                const yOffset = 55 * Math.sin(angle);
-                const xOffset = 55 + 55 * Math.cos(angle);
-                this.setOffset(xOffset, yOffset);
-            }
-        }
 
         freezeBullets = this.physics.add.group({
             classType: FreezeBullet,
@@ -333,15 +240,16 @@ export default class Main extends Phaser.Scene {
             this.physics.add.collider(allGerms[i]);
 
             this.physics.add.collider(freezeBullets, allGerms[i], (bullet, germ) => {
-                bullet.explode();
-                germ.freeze();
+                // TODO: Again wondering if "as" is the right approach here.
+                (bullet as FreezeBullet).explode();
+                (germ as Germ).freeze();
             });
             this.physics.add.collider(lasers, allGerms[i], (laser, germ) => {
-                germ.die();
+                (germ as Germ).die();
                 this.sound.play('hit', { volume: 0.75 });
             });
             this.physics.add.collider(player, allGerms[i], (player, germ) => {
-                if (!germ.frozen) {
+                if (!(germ as Germ).frozen) {
                     this.endGame(false);
                 }
             });
@@ -405,7 +313,7 @@ export default class Main extends Phaser.Scene {
 
             allGerms.forEach(i => {
                 i.getChildren().forEach(j => {
-                    j.tickBehavior();
+                    (j as Germ).tickBehavior();
                 })
             })
 
@@ -432,7 +340,7 @@ export default class Main extends Phaser.Scene {
             constants.height / 2 - 250,
             didWin ? 'YOU WIN!' : 'GAME OVER',
             {
-                fill: '#00ff00',
+                color: '#00ff00',
                 fontSize: '96px',
                 fontStyle: 'bold',
             },

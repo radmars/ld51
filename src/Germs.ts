@@ -1,4 +1,4 @@
-export { GermBlue, GermGreen, GermOrange, GermPink };
+export { Germ, GermBlue, GermGreen, GermOrange, GermPink };
 
 import { constants, center } from './constants';
 import { StageVars } from './StageVars';
@@ -95,7 +95,7 @@ class GermBlue extends Germ {
     velX: number;
     velY: number;
 
-    constructor(scene, x, y) {
+    constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y);
         this.velX = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
         this.velY = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
@@ -133,7 +133,7 @@ class GermBlue extends Germ {
 class GermGreen extends Germ {
     velX: number;
 
-    constructor(scene, x, y) {
+    constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y);
         this.velX = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
         this.play('germGreenIdle');
@@ -166,7 +166,7 @@ class GermGreen extends Germ {
 class GermOrange extends Germ {
     velY: number;
 
-    constructor(scene, x, y) {
+    constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y);
         this.velY = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
         this.play('germOrangeIdle');
@@ -199,7 +199,7 @@ class GermOrange extends Germ {
 class GermPink extends Germ {
     velR: number;
 
-    constructor(scene, x, y) {
+    constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y);
         this.velR = Phaser.Math.FloatBetween(-0.012 * StageVars.maxInitialGermSpeed, 0.012 * StageVars.maxInitialGermSpeed);
         this.play('germPinkIdle');

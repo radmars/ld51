@@ -4,19 +4,17 @@ import { constants, center } from './constants';
 import { StageVars } from './StageVars';
 import { germPoolMap, gameOver } from './scenes/Main';
 
-class Germ extends Phaser.Physics.Arcade.Sprite {
-    unfreezeTimer: Phaser.Time.TimerEvent;
+abstract class Germ extends Phaser.Physics.Arcade.Sprite {
+    unfreezeTimer: Phaser.Time.TimerEvent | null = null;
     readyToReproduce = false;
     frozen = false;
 
-    constructor(scene: Phaser.Scene, x: number, y: number) {
-        super(scene, x, y);
+    constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+        super(scene, x, y, texture);
         this.unfreeze();
     }
-    color() {
-        // Meant as an abstract method.
-        console.log("Error: called 'color()' on Germ class!");
-    }
+
+    abstract color(): string
 
     die() {
         this.disableBody(true, true);
@@ -96,7 +94,7 @@ class GermBlue extends Germ {
     velY: number;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
-        super(scene, x, y);
+        super(scene, x, y, 'germBlue');
         this.velX = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
         this.velY = Phaser.Math.FloatBetween(-StageVars.maxInitialGermSpeed, StageVars.maxInitialGermSpeed);
         this.play('germBlueIdle');
@@ -134,7 +132,7 @@ class GermGreen extends Germ {
     velX: number;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
-        super(scene, x, y);
+        super(scene, x, y, 'germGreen');
         this.velX = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
         this.play('germGreenIdle');
     }
@@ -167,7 +165,7 @@ class GermOrange extends Germ {
     velY: number;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
-        super(scene, x, y);
+        super(scene, x, y, 'germOrange');
         this.velY = Phaser.Math.FloatBetween(-2 * StageVars.maxInitialGermSpeed, 2 * StageVars.maxInitialGermSpeed);
         this.play('germOrangeIdle');
     }
@@ -200,7 +198,7 @@ class GermPink extends Germ {
     velR: number;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
-        super(scene, x, y);
+        super(scene, x, y, 'germPink');
         this.velR = Phaser.Math.FloatBetween(-0.012 * StageVars.maxInitialGermSpeed, 0.012 * StageVars.maxInitialGermSpeed);
         this.play('germPinkIdle');
     }

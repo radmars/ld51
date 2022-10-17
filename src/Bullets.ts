@@ -10,8 +10,8 @@ abstract class Bullet extends Phaser.Physics.Arcade.Sprite {
   velY: number;
   abstract speed: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y)
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+    super(scene, x, y, texture);
 
     this.velX = 0;
     this.velY = 0;
@@ -42,9 +42,7 @@ abstract class Bullet extends Phaser.Physics.Arcade.Sprite {
 class FreezeBullet extends Bullet {
   speed = Phaser.Math.GetSpeed(constants.freezeSpeed, 1);
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y)
-
-    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'freezeBullet');
+    super(scene, x, y, 'freezeBullet');
   }
 
   fire(x: number, y: number, angle: number) {
@@ -78,7 +76,7 @@ class Laser extends Bullet {
   speed = Phaser.Math.GetSpeed(constants.laserSpeed, 1);
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y)
+    super(scene, x, y, 'laser');
 
     this.play('laser');
   }

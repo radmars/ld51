@@ -1,3 +1,5 @@
+export { Main, germPoolMap, gameOver };
+
 import Phaser from 'phaser';
 import { constants, center } from '../constants';
 import { Germ, GermBlue, GermGreen, GermOrange, GermPink } from '../Germs';
@@ -21,18 +23,18 @@ let germsGreen: Phaser.Physics.Arcade.Group;
 let germsOrange: Phaser.Physics.Arcade.Group;
 let germsPink: Phaser.Physics.Arcade.Group;
 let allGerms: Phaser.Physics.Arcade.Group[];
-export const germPoolMap = new Map();
+const germPoolMap = new Map();
 
 let tenSecondTimer: Phaser.Time.TimerEvent;
 let countdownText: Phaser.GameObjects.Text;
 let gameOverText: Phaser.GameObjects.Text;
 let stageText: Phaser.GameObjects.Text;
 
-export let gameOver = false;
+let gameOver = false;
 let clickToRestart = false;
 let currentStage = 1;
 
-export default class Main extends Phaser.Scene {
+class Main extends Phaser.Scene {
     constructor() {
         super('Main');
     }
@@ -72,13 +74,13 @@ export default class Main extends Phaser.Scene {
         allGerms.forEach((i) => {
             // Can't find a way to do this globally, so will need to do this for each germ spawned afterward.
             // Also, the germs only collide with themselves after this is set for some reason.
-            i.children.each((germ) => {
-                // TODO: Is there some way to do this type assertion once instead of for each statement?
-                (germ as Germ).setCircle(16);
+            const children = i.children as Phaser.Structs.Set<Germ>;
+            children.each((germ) => {
+                germ.setCircle(16);
                 germ.setActive(true);
-                (germ as Germ).enableBody(true, 0.0, 0.0, true, true);
-                (germ as Germ).readyToReproduce = false;
-                (germ as Germ).unfreeze();
+                germ.enableBody(true, 0.0, 0.0, true, true);
+                germ.readyToReproduce = false;
+                germ.unfreeze();
             });
 
             // Put germs randomly within a central circle
@@ -237,10 +239,10 @@ export default class Main extends Phaser.Scene {
 
         for (let i = 0; i < allGerms.length; i++) {
             // Allow germs to collide with others of the same type
-            this.physics.add.collider(allGerms[i]);
+            // This is a terrible cast; we should instead ask the upstream bindings to accept the single argument call as legitimate.
+            this.physics.add.collider(allGerms[i], (undefined as unknown) as Phaser.GameObjects.GameObject);
 
             this.physics.add.collider(freezeBullets, allGerms[i], (bullet, germ) => {
-                // TODO: Again wondering if "as" is the right approach here.
                 (bullet as FreezeBullet).explode();
                 (germ as Germ).freeze();
             });

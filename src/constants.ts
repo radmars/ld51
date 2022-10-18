@@ -13,9 +13,9 @@ const constants = {
   freezeSpeed: 600,
   laserSpeed: 1200,
   spawnChance: 0.25,
-} as const;
+};
 
 const center = {
   x: constants.width / 2,
   y: constants.height / 2,
-}
+};

@@ -1,4 +1,4 @@
-name: TSC
+name: TypeScript Syntax Check
 on:
   push:
     branches: [ "master" ]
@@ -6,7 +6,7 @@ on:
     branches: [ "master" ]
 
 jobs:
-  eslint:
+  tsc:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -14,5 +14,5 @@ jobs:
     - name: Install tsc
       run: yarn
 
-    - name: Run ESLint
+    - name: Run tsc
       run: tsc --noEmit

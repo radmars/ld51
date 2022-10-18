@@ -26,7 +26,7 @@ abstract class Germ extends Phaser.Physics.Arcade.Sprite {
     }
 
     freeze() {
-        if (this.unfreezeTimer) this.unfreezeTimer.destroy();
+        this.unfreezeTimer?.destroy();
         this.frozen = true;
         this.setTint(0x5555ff);
         this.scene.sound.play('ice1');
@@ -43,11 +43,15 @@ abstract class Germ extends Phaser.Physics.Arcade.Sprite {
     }
 
     unfreeze() {
-        if (this.unfreezeTimer) this.unfreezeTimer.destroy();
+        this.unfreezeTimer?.destroy();
         this.frozen = false;
         this.setTint(0xffffff);
-        if (this.readyToReproduce) this.play(`germ${this.color()}Splitting`);
-        else this.play(`germ${this.color()}Idle`);
+        if (this.readyToReproduce) {
+            this.play(`germ${this.color()}Splitting`);
+        }
+        else {
+            this.play(`germ${this.color()}Idle`);
+        }
     }
 
     // Initializer for new germ produced via reproduction.

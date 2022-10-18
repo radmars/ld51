@@ -237,28 +237,24 @@ class Main extends Phaser.Scene {
         // Collision code
         //
 
-        for (let i = 0; i < allGerms.length; i++) {
-            // Allow germs to collide with others of the same type
-            // This is a terrible cast; we should instead ask the upstream bindings to accept the single argument call as legitimate.
-            this.physics.add.collider(allGerms[i], (undefined as unknown) as Phaser.GameObjects.GameObject);
-
-            this.physics.add.collider(freezeBullets, allGerms[i], (bullet, germ) => {
+        for (const germGroup of allGerms) {
+            this.physics.add.collider(freezeBullets, germGroup, (bullet, germ) => {
                 (bullet as FreezeBullet).explode();
                 (germ as Germ).freeze();
             });
-            this.physics.add.collider(lasers, allGerms[i], (laser, germ) => {
+            this.physics.add.collider(lasers, germGroup, (laser, germ) => {
                 (germ as Germ).die();
                 this.sound.play('hit', { volume: 0.75 });
             });
-            this.physics.add.collider(player, allGerms[i], (player, germ) => {
+            this.physics.add.collider(player, germGroup, (player, germ) => {
                 if (!(germ as Germ).frozen) {
                     this.endGame(false);
                 }
             });
 
-            // Allow germs to collide with all other types
-            for (let j = 1; j < allGerms.length; j++) {
-                this.physics.add.collider(allGerms[i], allGerms[j]);
+            // Allow germs to collide with all other germs
+            for (const otherGermGroup of allGerms) {
+                this.physics.add.collider(germGroup, otherGermGroup);
             }
         }
     }

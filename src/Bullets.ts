@@ -8,13 +8,14 @@ import { constants } from './constants';
 abstract class Bullet extends Phaser.Physics.Arcade.Sprite {
   velX: number;
   velY: number;
-  abstract speed: number;
+  readonly speed: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string, speedVal: number) {
     super(scene, x, y, texture);
 
     this.velX = 0;
     this.velY = 0;
+    this.speed = Phaser.Math.GetSpeed(speedVal, 1);
   }
 
   fire(x: number, y: number, angle: number) {
@@ -40,9 +41,8 @@ abstract class Bullet extends Phaser.Physics.Arcade.Sprite {
 }
 
 class FreezeBullet extends Bullet {
-  speed = Phaser.Math.GetSpeed(constants.freezeSpeed, 1);
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'freezeBullet');
+    super(scene, x, y, 'freezeBullet', constants.freezeSpeed);
   }
 
   fire(x: number, y: number, angle: number) {
@@ -73,10 +73,8 @@ class FreezeBullet extends Bullet {
 }
 
 class Laser extends Bullet {
-  speed = Phaser.Math.GetSpeed(constants.laserSpeed, 1);
-
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'laser');
+    super(scene, x, y, 'laser', constants.laserSpeed);
 
     this.play('laser');
   }

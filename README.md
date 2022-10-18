@@ -1,9 +1,9 @@
 Radmars's entry into Ludum Dare 51's Jam.
 
-# TODO
+Phaser w/ TypeScript template used: https://github.com/geocine/phaser3-rollup-typescript
 
--   Radmars intro screen
--   Particle effects
--   unfreeze should probably be on a timer and not on 10s tick
--   spacebar for laser?
--   make sure background is black & game is centered on itch.io page or wherever the heck we embed it
+# Commands
+
+-   To start a server on port 3000, run `yarn dev`. Note that you seem to have to rerun the command after making code changes.
+-   To syntax check the typescript, run `tsc --noEmit`
+-   To lint the project, run `yarn eslint .`

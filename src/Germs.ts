@@ -7,7 +7,7 @@ import { germPoolMap, gameOver } from './scenes/Main';
 abstract class Germ extends Phaser.Physics.Arcade.Sprite {
     unfreezeTimer: Phaser.Time.TimerEvent | null = null;
     readyToReproduce = false;
-    frozen = false;
+    freezeLevel = 0;
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
         super(scene, x, y, texture);
@@ -25,12 +25,23 @@ abstract class Germ extends Phaser.Physics.Arcade.Sprite {
         this.unfreeze();
     }
 
+    frozen(): boolean {
+        return this.freezeLevel > 0;
+    }
+
     freeze() {
         this.unfreezeTimer?.destroy();
-        this.frozen = true;
-        this.setTint(0x5555ff);
-        this.scene.sound.play('ice1');
+        this.freezeLevel++;
         this.scene.sound.play('hit', { volume: 0.75 });
+
+        if (this.freezeLevel >= constants.fatalFreeze) {
+            this.die();
+            return;
+        }
+
+        this.scene.sound.play('ice1');
+        const dimness = 128 - (96 / constants.fatalFreeze) * this.freezeLevel;
+        this.setTint(Phaser.Display.Color.GetColor(dimness, dimness, 255));
         this.stop();
         this.unfreezeTimer = this.scene.time.addEvent({
             delay: 5000,
@@ -44,7 +55,7 @@ abstract class Germ extends Phaser.Physics.Arcade.Sprite {
 
     unfreeze() {
         this.unfreezeTimer?.destroy();
-        this.frozen = false;
+        this.freezeLevel = 0;
         this.setTint(0xffffff);
         if (this.readyToReproduce) {
             this.play(`germ${this.color()}Splitting`);
@@ -70,7 +81,7 @@ abstract class Germ extends Phaser.Physics.Arcade.Sprite {
             return;
         }
 
-        if (this.frozen) {
+        if (this.frozen()) {
             return;
         }
 
@@ -115,7 +126,7 @@ class GermBlue extends Germ {
         }
 
         super.update(time, delta);
-        if (this.frozen) {
+        if (this.frozen()) {
             return;
         }
         // Pull toward the center
@@ -152,7 +163,7 @@ class GermGreen extends Germ {
         }
 
         super.update(time, delta);
-        if (this.frozen) {
+        if (this.frozen()) {
             return;
         }
         this.velX += (center.x - this.x) * 2 * constants.germGravityFactor;
@@ -185,7 +196,7 @@ class GermOrange extends Germ {
         }
 
         super.update(time, delta);
-        if (this.frozen) {
+        if (this.frozen()) {
             return;
         }
         this.velY += (center.y - this.y) * 2 * constants.germGravityFactor;
@@ -218,7 +229,7 @@ class GermPink extends Germ {
         }
 
         super.update(time, delta);
-        if (this.frozen) {
+        if (this.frozen()) {
             return;
         }
         // Rotate around center

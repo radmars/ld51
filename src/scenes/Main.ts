@@ -41,6 +41,7 @@ class Main extends Phaser.Scene {
 
     preload() {
         this.load.image('background', 'assets/background.png');
+        this.load.image('yellowParticle', 'assets/yellow_particle.png');
 
         this.load.spritesheet('player', 'assets/player.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('germBlue', 'assets/germ_blue.png', { frameWidth: 32, frameHeight: 32 });
@@ -247,7 +248,7 @@ class Main extends Phaser.Scene {
                 this.sound.play('hit', { volume: 0.75 });
             });
             this.physics.add.collider(player, germGroup, (player, germ) => {
-                if (!(germ as Germ).frozen) {
+                if (!(germ as Germ).frozen()) {
                     this.endGame(false);
                 }
             });

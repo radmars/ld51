@@ -13,6 +13,7 @@ const constants = {
   freezeSpeed: 600,
   laserSpeed: 1200,
   spawnChance: 0.25,
+  fatalFreeze: 5,
 };
 
 const center = {

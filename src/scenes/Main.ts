@@ -1,6 +1,7 @@
 export { Main, germPoolMap, gameOver, particleManager };
 
 import Phaser from 'phaser';
+import { devMode } from '../index';
 import { constants, center } from '../constants';
 import { Germ, GermBlue, GermGreen, GermOrange, GermPink } from '../Germs';
 import { FreezeBullet, Laser } from '../Bullets';
@@ -105,8 +106,10 @@ class Main extends Phaser.Scene {
         // Sound
         //
         this.sound.pauseOnBlur = false;
-        const music = this.sound.add('music', { volume: 0.75, loop: true });
-        music.play();
+        if (!devMode) {
+            const music = this.sound.add('music', { volume: 0.75, loop: true });
+            music.play();
+        }
 
         //
         // Global state

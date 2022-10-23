@@ -225,10 +225,11 @@ class Main extends Phaser.Scene {
         particleManager = this.add.particles('yellowParticle');
 
         this.input.mouse.disableContextMenu();
-        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
             mouseX = pointer.x;
             mouseY = pointer.y;
-
+        });
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
             if (pointer.rightButtonDown()) {
                 fireLaser = true;
             }
@@ -273,8 +274,8 @@ class Main extends Phaser.Scene {
 
         // Player rotates around center.
         Phaser.Actions.RotateAroundDistance([player], center, constants.playerSpeed * delta, constants.size / 2 - 50);
-        const angleDeg = Math.atan2(player.y - center.y, player.x - center.x) * 180 / Math.PI;
-        player.angle = angleDeg + 45; // should face the center point, and the source image is rotated 45 degrees.
+        const playerAngle = Phaser.Math.Angle.BetweenPoints(player, { x: mouseX, y: mouseY });
+        player.rotation = playerAngle - (3 / 4) * Math.PI; // source image is rotated
 
         if (fireFreeze) {
             fireFreeze = false;

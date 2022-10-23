@@ -1,4 +1,4 @@
-export { Main, germPoolMap, gameOver };
+export { Main, germPoolMap, gameOver, particleManager };
 
 import Phaser from 'phaser';
 import { constants, center } from '../constants';
@@ -17,6 +17,7 @@ let freezeLastFired = 0;
 let laserReady = true;
 let fireFreeze = false;
 let fireLaser = false;
+let particleManager: Phaser.GameObjects.Particles.ParticleEmitterManager;
 
 let germsBlue: Phaser.Physics.Arcade.Group;
 let germsGreen: Phaser.Physics.Arcade.Group;
@@ -218,6 +219,8 @@ class Main extends Phaser.Scene {
 
         player = this.physics.add.sprite(constants.width / 2, 50, 'player').setDepth(1).setCircle(16);
 
+        particleManager = this.add.particles('yellowParticle');
+
         this.input.mouse.disableContextMenu();
         this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
             mouseX = pointer.x;
@@ -303,7 +306,7 @@ class Main extends Phaser.Scene {
             }
         }
 
-        countdownText.setText(tenSecondTimer.getRemainingSeconds().toString().substr(0, 4));
+        countdownText.setText(tenSecondTimer.getRemainingSeconds().toString().substring(0, 4));
 
         if (ticking) {
             laserReady = true;

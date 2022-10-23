@@ -1,5 +1,6 @@
 export { FreezeBullet, Laser };
 
+import { particleManager } from './scenes/Main';
 import { constants } from './constants';
 
 // Bullet code
@@ -35,15 +36,23 @@ abstract class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.y += delta * this.velX;
 
     if (this.y < 0 || this.y > constants.height || this.x < 0 || this.x > constants.width) {
-      this.disableBody(true, true);
+      this.kill();
     }
+  }
+
+  kill() {
+    this.disableBody(true, true);
   }
 }
 
 class FreezeBullet extends Bullet {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'freezeBullet', constants.freezeSpeed);
-  }
+
+    this.on(Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + 'freezeExplode', () => {
+      this.kill();
+  });
+}
 
   fire(x: number, y: number, angle: number) {
     this.setCircle(8);
@@ -54,18 +63,6 @@ class FreezeBullet extends Bullet {
 
   explode() {
     this.disableBody();
-    // Feels like an event listener would be best for this, but it keeps triggering after the animation completes.
-    // this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-    //     this.setActive(false);
-    //     this.setVisible(false);
-    // })
-    this.scene.time.addEvent({
-      delay: 300,
-      callback: () => {
-        this.setActive(false);
-        this.setVisible(false);
-      },
-    });
     this.velX = 0;
     this.velY = 0;
     this.play('freezeExplode');
@@ -73,15 +70,25 @@ class FreezeBullet extends Bullet {
 }
 
 class Laser extends Bullet {
+  emitter: Phaser.GameObjects.Particles.ParticleEmitter;
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'laser', constants.laserSpeed);
 
-    this.play('laser');
+    this.emitter = particleManager.createEmitter({
+      speed: [50, 200],
+      lifespan: 1000,
+      alpha: [1, 0],
+      scale: { start: 0.5, end: 0 },
+      blendMode: 'SCREEN',
+    });
+    this.emitter.startFollow(this);
   }
 
   fire(x: number, y: number, angle: number) {
     super.fire(x, y, angle);
     this.scene.sound.play('laser', { volume: 0.5 });
+    this.emitter.start();
     // Need to do lots of adjustments of the bounding box because arcade physics and
     // rotated rectangles don't get along. Only the leading tip of the laser will
     // trigger a collision.
@@ -89,5 +96,10 @@ class Laser extends Bullet {
     const yOffset = 55 * Math.sin(angle);
     const xOffset = 55 + 55 * Math.cos(angle);
     this.setOffset(xOffset, yOffset);
+  }
+
+  kill() {
+    this.emitter.stop();
+    super.kill();
   }
 }
